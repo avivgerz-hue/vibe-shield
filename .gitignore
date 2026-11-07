@@ -19,6 +19,9 @@ SECURITY_PATCH_PROMPT.md
 .env
 .env.*
 !.env.example
+# Fixture secrets are fake and load-bearing for the test suite; they must be
+# tracked or CI scans a different project than the one the developer ran.
+!tests/fixtures/**/.env*
 
 # Editors / OS
 .DS_Store
