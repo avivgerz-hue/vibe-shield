@@ -90,8 +90,9 @@ npx vibe-shield scan --fix-prompt
 npx vibe-shield init
 ```
 
-Prefer to run the tip of `main` before a release? Install straight from GitHub —
-`prepare` compiles the TypeScript on install:
+Prefer to run the tip of `main` before a release? Install straight from GitHub.
+The compiled CLI is committed, so this needs **no TypeScript** and starts in
+milliseconds:
 
 ```bash
 npx github:avivgerz-hue/vibe-shield scan
@@ -104,6 +105,7 @@ npx github:avivgerz-hue/vibe-shield scan
 | `.claude/skills/vibe-shield/SKILL.md` | Agent Skill: forces Claude Code (and any SKILL.md-aware agent) to audit before finishing |
 | `AGENTS.md` *(section)* | Same contract for Codex, Cursor, Windsurf, Amp, and anything that reads a repo instruction file |
 | `.cursor/rules/vibe-shield.mdc` | `alwaysApply` Cursor rule |
+| `.mcp.json` | MCP server entry (merged — your existing servers are preserved) |
 | `.github/workflows/vibe-shield.yml` | Fails the pull request on new high/critical findings, uploads SARIF to code scanning |
 | `.vibe-shieldignore` | The documented escape hatch (empty by default, with guidance) |
 
@@ -222,6 +224,52 @@ vibe-shield encodes those specific shapes: 60 signatures across five families, e
 | `VSB-AGENT-010` | missing frontmatter, wildcard `allowed-tools` | CWE-250 | medium |
 | `VSB-AGENT-011` | literal credential inside an instruction/MCP file | CWE-798 | critical |
 | `VSB-AGENT-012` | `eval "$1"`, `sh -c "$VAR"` in a skill script | CWE-78 | medium |
+
+---
+
+## 🔌 Native MCP server
+
+vibe-shield is itself a [Model Context Protocol](https://modelcontextprotocol.io) server, so
+Claude Code, Claude Desktop, Cursor and Codex can call the scanner as a tool
+instead of shelling out and parsing console output.
+
+```bash
+npx vibe-shield mcp          # JSON-RPC 2.0 over stdio
+```
+
+Three tools:
+
+| Tool | What it does |
+| --- | --- |
+| `vibe_shield_scan` | Runs the 60 rules over a project or specific paths → grade, score, findings with file:line, CWE and remediation |
+| `vibe_shield_audit_skills` | Audits `.claude/skills`, `.cursor` rules, `AGENTS.md` and MCP configs for prompt injection and exfiltration traps |
+| `vibe_shield_explain_rule` | Full CWE detail, vulnerable/fixed examples and remediation for any rule id or slug |
+
+`npx vibe-shield init` writes the config for you, merging into `.mcp.json`
+**without clobbering** servers you already have:
+
+```jsonc
+{
+  "mcpServers": {
+    "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"] },
+    "vibe-shield": { "command": "npx", "args": ["--yes", "vibe-shield@latest", "mcp"] }
+  }
+}
+```
+
+Or add it by hand:
+
+```bash
+claude mcp add vibe-shield -- npx --yes vibe-shield@latest mcp
+```
+
+The server is zero-dependency, writes **only** JSON-RPC to stdout, honours
+JSON-RPC notifications (no spurious replies), and returns tool errors as
+`isError` results so a bad argument degrades one call instead of killing the
+session. Requests are handled in arrival order.
+
+An empty target is reported as `No files were scanned` rather than a green pass —
+a scanner that says "clean" when it read nothing is worse than no scanner.
 
 ---
 
@@ -408,7 +456,8 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 ```
 vibe-shield scan [paths...]         Scan the project (default: `.`)
 vibe-shield audit-skills [paths...] Audit agent skills, rules, AGENTS.md and MCP config
-vibe-shield init                    Install the Agent Skill, AGENTS.md section and CI gate
+vibe-shield init                    Install the Agent Skill, AGENTS.md, .mcp.json and CI gate
+vibe-shield mcp                     Serve the MCP tools over stdio
 vibe-shield rules                   List every detection rule
 vibe-shield explain <RULE_ID>       Full documentation for one rule
 vibe-shield version | help
@@ -483,7 +532,7 @@ git clone https://github.com/avivgerz-hue/vibe-shield
 cd vibe-shield
 npm ci
 npm run typecheck   # tsc --noEmit (strict, noUnusedLocals)
-npm test            # 175 Vitest tests
+npm test            # 224 Vitest tests
 npm run build       # tsc + postbuild (shebang, chmod, CJS marker)
 npm run verify      # typecheck + test + build + self-scan + self-audit
 ```

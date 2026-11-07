@@ -4,8 +4,21 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false
   },
-  "include": ["bin/**/*.ts", "src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "tests", "scripts"]
+  "include": [
+    "bin/**/*.ts",
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "tests",
+    "scripts"
+  ]
 }

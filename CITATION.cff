@@ -1,0 +1,47 @@
+cff-version: 1.2.0
+message: "If you use vibe-shield in research, teaching, or a product, please cite it as below."
+title: "vibe-shield: a security scanner and MCP guard for AI-generated code"
+abstract: >-
+  vibe-shield is a zero-dependency static security analyzer for code written by
+  autonomous coding agents. It detects the vulnerability classes that agents
+  ship most often — credentials leaked into client bundles, mutation endpoints
+  with no authentication, Postgres tables without Row Level Security,
+  SQL injection, unverified webhooks, prompt-injection sinks and poisoned
+  agent skills or MCP servers — and reports them with an exact file, line,
+  CWE and ordered remediation steps. It ships 60 detection signatures, a
+  Model Context Protocol server, SARIF 2.1.0 export for CI code scanning, and
+  an Agent Skill that forces an audit before a task is reported complete.
+type: software
+authors:
+  - name: "VibeFoundry"
+    alias: avivgerz-hue
+    website: "https://github.com/avivgerz-hue"
+version: "1.1.0"
+date-released: "2026-11-07"
+license: MIT
+url: "https://github.com/avivgerz-hue/vibe-shield"
+repository-code: "https://github.com/avivgerz-hue/vibe-shield"
+repository-artifact: "https://www.npmjs.com/package/vibe-shield"
+keywords:
+  - static analysis
+  - application security
+  - SAST
+  - AI agents
+  - large language models
+  - Model Context Protocol
+  - prompt injection
+  - software supply chain
+  - secure coding
+identifiers:
+  - type: url
+    value: "https://github.com/avivgerz-hue/vibe-shield"
+    description: "Source repository"
+  - type: other
+    value: "npm:vibe-shield"
+    description: "npm package"
+references:
+  - type: software
+    title: "Model Context Protocol"
+    authors:
+      - name: "Anthropic"
+    url: "https://modelcontextprotocol.io"

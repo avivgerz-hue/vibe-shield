@@ -549,6 +549,8 @@ describe('package contract', () => {
     files: string[];
     dependencies: Record<string, string>;
     scripts: Record<string, string>;
+    keywords: string[];
+    version: string;
     engines: { node: string };
   };
 
@@ -570,11 +572,36 @@ describe('package contract', () => {
     expect(manifest.engines.node).toContain('18');
   });
 
+  it('fills the manifest fields the MCP directories require', () => {
+    expect(manifest.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(manifest.keywords.length).toBeGreaterThanOrEqual(30);
+    for (const term of ['mcp', 'mcp-server', 'model-context-protocol', 'claude-code', 'agent-skills', 'ai-security', 'sast', 'static-analysis', 'cybersecurity', 'appsec', 'prompt-injection', 'supabase-rls', 'nextjs-security', 'secret-scanner', 'sarif', 'codex', 'cursor']) {
+      expect(manifest.keywords, term).toContain(term);
+    }
+  });
+
+  it('ships a committed dist so a git install needs no TypeScript', () => {
+    // `npx github:owner/repo` installs without devDependencies. If dist/ were
+    // gitignored, the bin path would dangle and the CLI could not start.
+    const root = path.join(__dirname, '..');
+    const ignore = readFileSync(path.join(root, '.gitignore'), 'utf8');
+    expect(ignore).not.toMatch(/^dist\/?$/m);
+    expect(existsSync(path.join(root, 'dist', 'bin', 'vibe-shield.js'))).toBe(true);
+  });
+
+  it('keeps prepare non-fatal when devDependencies are absent', () => {
+    const script = readFileSync(path.join(__dirname, '..', 'scripts', 'prepare.mjs'), 'utf8');
+    // A non-zero exit from prepare aborts `npm install` for the consumer.
+    expect(script).toMatch(/process\.exit\(0\)/);
+    expect(script).not.toMatch(/process\.exit\(1\)/);
+  });
+
   it('builds on install so `npx github:` works', () => {
-    // dist/ is gitignored, so a git-dependency install ships only sources.
-    // npm runs `prepare` after installing devDependencies, which is what makes
-    // `npx github:avivgerz-hue/vibe-shield` produce a runnable bin.
-    expect(manifest.scripts.prepare).toBe('npm run build');
+    // A git-dependency install must end up with a runnable bin without
+    // requiring TypeScript on the consumer's machine. `prepare` handles it:
+    // it is a no-op when the committed dist/ is present, and only compiles when
+    // dist/ is missing and a local typescript exists.
+    expect(manifest.scripts.prepare).toContain('prepare.mjs');
     expect(manifest.scripts.prepublishOnly).toContain('verify');
   });
 });

@@ -17,6 +17,7 @@ import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { auditSkills } from '../src/mcp-guard/skill-auditor';
+import { serveMcp } from '../src/mcp/server';
 import { installScaffold } from '../src/init/scaffold';
 import { reportConsole, createColorizer } from '../src/reporter/console-reporter';
 import { formatResult, isOutputFormat, OUTPUT_FORMATS, type OutputFormat } from '../src/reporter/formatters';
@@ -56,6 +57,7 @@ COMMANDS
   init                   Install the Agent Skill, AGENTS.md section and CI workflow.
   rules                  List every detection rule.
   explain <RULE_ID>      Show full documentation for a rule.
+  mcp                    Serve the Model Context Protocol tools over stdio.
   version                Print the version.
   help                   Print this help.
 
@@ -402,6 +404,7 @@ async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
   write(io, 'stdout', `\n${color.bold(color.cyan('🛡️  vibe-shield init'))} ${color.dim(target)}\n\n`);
   for (const file of result.written) write(io, 'stdout', `  ${color.green('created')}  ${file}\n`);
   for (const file of result.appended) write(io, 'stdout', `  ${color.green('updated')}  ${file}\n`);
+  for (const file of result.blocked) write(io, 'stdout', `  ${color.yellow('blocked')}  ${file} ${color.dim('(left untouched — fix the file by hand)')}\n`);
   for (const file of result.skipped) write(io, 'stdout', `  ${color.gray('skipped')}  ${file} ${color.dim('(exists — use --force)')}\n`);
   for (const warning of result.warnings) write(io, 'stdout', `  ${color.yellow('note')}     ${warning}\n`);
 
@@ -503,6 +506,30 @@ function commandExplain(parsed: ParsedArgs, io: CliIo): number {
 }
 
 /* -------------------------------------------------------------------------- */
+/* mcp                                                                        */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Serve MCP over stdio.
+ *
+ * Nothing but JSON-RPC may reach stdout here — a banner or progress line would
+ * corrupt the client session — so the one diagnostic permitted (an explicit
+ * note that the server is ready) goes to stderr.
+ */
+async function commandMcp(parsed: ParsedArgs, io: CliIo): Promise<number> {
+  if (parsed.positionals.length) {
+    write(io, 'stderr', `vibe-shield: mcp takes no positional arguments (got ${parsed.positionals.join(', ')})\n`);
+    return EXIT_USAGE;
+  }
+  write(io, 'stderr', 'vibe-shield: MCP server listening on stdio\n');
+  await serveMcp(
+    { stdin: process.stdin, stdout: io.stdout, stderr: io.stderr },
+    { cwd: io.cwd, version: await packageVersion() },
+  );
+  return EXIT_OK;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Entry point                                                                */
 /* -------------------------------------------------------------------------- */
 
@@ -529,6 +556,8 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo()): Pro
       return commandRules(parsed, io);
     case 'explain':
       return commandExplain(parsed, io);
+    case 'mcp':
+      return commandMcp(parsed, io);
     case 'version':
       write(io, 'stdout', `${await packageVersion()}\n`);
       return EXIT_OK;
@@ -554,4 +583,4 @@ if (require.main === module) {
     });
 }
 
-export { HELP as HELP_TEXT, commandScan, commandAuditSkills, commandInit, commandRules, commandExplain };
+export { HELP as HELP_TEXT, commandScan, commandAuditSkills, commandInit, commandRules, commandExplain, commandMcp };

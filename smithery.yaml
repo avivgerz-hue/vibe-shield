@@ -1,0 +1,28 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config/smithery-yaml
+#
+# vibe-shield exposes three MCP tools over stdio:
+#   vibe_shield_scan          scan a project against 60 security rules
+#   vibe_shield_audit_skills  audit agent skills and MCP configs for poisoning
+#   vibe_shield_explain_rule  full CWE detail and remediation for one rule
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required: []
+    properties:
+      target:
+        type: string
+        description: >-
+          Default directory to scan, relative to the MCP client's working
+          directory. Leave empty to let each tool call name its own target.
+        default: "."
+  commandFunction:
+    |-
+    (config) => ({
+      command: 'npx',
+      args: ['--yes', 'vibe-shield@latest', 'mcp'],
+      env: config.target ? { VIBE_SHIELD_TARGET: config.target } : {}
+    })
+  exampleConfig:
+    target: "."

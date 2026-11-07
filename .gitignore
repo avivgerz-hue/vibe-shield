@@ -1,9 +1,16 @@
 # Build output
-dist/
+#
+# dist/ is intentionally COMMITTED. It is the compiled CLI, and shipping it is
+# what makes `npx github:avivgerz-hue/vibe-shield` run instantly — a git install
+# has no typescript to compile with, so without this the bin path dangles.
+# Only JavaScript and declarations are tracked; source maps are excluded below.
 *.tsbuildinfo
 
 # Dependencies
 node_modules/
+
+# Source maps are not needed at runtime and would triple the size of dist/.
+dist/**/*.map
 
 # Test + coverage artifacts
 coverage/

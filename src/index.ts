@@ -123,4 +123,4 @@ export {
 } from './scanner/types';
 
 /** Package version, injected at build time from `package.json`. */
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';

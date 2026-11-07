@@ -99,6 +99,11 @@ Each finding carries a `triage` field: `block` means refuse and escalate, `revie
 | `rules` | list every rule |
 | `explain <RULE_ID>` | full documentation for one rule |
 
+If the repository has a `.mcp.json`, the same three capabilities are also
+available as MCP tools — `vibe_shield_scan`, `vibe_shield_audit_skills` and
+`vibe_shield_explain_rule`. Prefer those when they are listed, because they
+return structured findings instead of text you have to parse.
+
 ## Definition of done
 
 - [ ] `npx vibe-shield scan --fail-on high` exits `0`

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": ["avivgerz-hue"],
+  "name": "vibe-shield",
+  "description": "Security scanner and MCP/skill auditor for AI-generated code: leaked secrets, unguarded API routes, missing Postgres RLS, SQL injection, prompt injection and poisoned agent skills.",
+  "repository": "https://github.com/avivgerz-hue/vibe-shield",
+  "homepage": "https://github.com/avivgerz-hue/vibe-shield#readme",
+  "license": "MIT",
+  "version": "1.1.0",
+  "runtime": "node",
+  "transport": "stdio",
+  "startCommand": "npx --yes vibe-shield@latest mcp",
+  "tools": [
+    {
+      "name": "vibe_shield_scan",
+      "description": "Runs the 60-rule scanner over a project and returns the grade, score and findings with exact file, line, CWE and remediation."
+    },
+    {
+      "name": "vibe_shield_audit_skills",
+      "description": "Audits .claude/skills, .cursor rules, AGENTS.md and MCP configs for prompt injection and exfiltration traps."
+    },
+    {
+      "name": "vibe_shield_explain_rule",
+      "description": "Returns full CWE details, vulnerable and fixed examples, and remediation steps for any rule id."
+    }
+  ],
+  "keywords": [
+    "security",
+    "sast",
+    "ai-security",
+    "prompt-injection",
+    "agent-skills",
+    "mcp-security"
+  ]
+}

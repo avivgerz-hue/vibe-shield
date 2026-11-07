@@ -22,8 +22,8 @@ export interface ScaffoldFile {
   /** Path relative to the target repository root (POSIX). */
   relativePath: string;
   contents: string;
-  /** `write` creates if missing, `append` adds a section if absent. */
-  mode: 'write' | 'append';
+  /** `write` creates if missing, `append` adds a section, `merge` adds one JSON key. */
+  mode: 'write' | 'append' | 'merge';
   /** Marker used to detect an existing section for `append` mode. */
   marker?: string;
   /** Human description shown in the init summary. */
@@ -49,6 +49,8 @@ export interface InitResult {
   written: string[];
   appended: string[];
   skipped: string[];
+  /** Files that exist but were left alone because they could not be merged. */
+  blocked: string[];
   warnings: string[];
 }
 
@@ -159,6 +161,11 @@ Each finding carries a \`triage\` field: \`block\` means refuse and escalate, \`
 | \`rules\` | list every rule |
 | \`explain <RULE_ID>\` | full documentation for one rule |
 
+If the repository has a \`.mcp.json\`, the same three capabilities are also
+available as MCP tools — \`vibe_shield_scan\`, \`vibe_shield_audit_skills\` and
+\`vibe_shield_explain_rule\`. Prefer those when they are listed, because they
+return structured findings instead of text you have to parse.
+
 ## Definition of done
 
 - [ ] \`npx vibe-shield scan --fail-on high\` exits \`0\`
@@ -201,6 +208,76 @@ The gate exists because the most common way AI-written code reaches production
 with a leaked \`SUPABASE_SERVICE_ROLE_KEY\` or an unauthenticated \`DELETE\`
 endpoint is that nobody asked it a second question.
 `;
+
+/* -------------------------------------------------------------------------- */
+/* .mcp.json                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** Key this tool owns inside `mcpServers`; nothing else is ever touched. */
+export const MCP_SERVER_KEY = 'vibe-shield';
+
+/**
+ * The server entry written into `.mcp.json`.
+ *
+ * `npx` is used rather than a local path so the config keeps working when the
+ * project is cloned elsewhere or the package is upgraded.
+ */
+export const MCP_SERVER_ENTRY = {
+  command: 'npx',
+  args: ['--yes', 'vibe-shield@latest', 'mcp'],
+} as const;
+
+/**
+ * Merge the vibe-shield server into an existing `.mcp.json` without disturbing
+ * anything already there.
+ *
+ * Returns the serialised file and whether our key was newly added. Existing
+ * servers, other top-level keys and the user's formatting choices are preserved;
+ * a malformed file is reported rather than overwritten, because silently
+ * rewriting someone's MCP config could break every server they run.
+ */
+export function mergeMcpConfig(
+  existing: string | null,
+  options: { force?: boolean } = {},
+): { contents: string; changed: boolean; error?: string } {
+  if (existing === null || existing.trim() === '') {
+    return {
+      contents: `${JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: MCP_SERVER_ENTRY } }, null, 2)}\n`,
+      changed: true,
+    };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(existing);
+  } catch (error) {
+    return {
+      contents: existing,
+      changed: false,
+      error: `.mcp.json is not valid JSON (${error instanceof Error ? error.message : String(error)}); left untouched.`,
+    };
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return { contents: existing, changed: false, error: '.mcp.json is not a JSON object; left untouched.' };
+  }
+
+  const config = parsed as Record<string, unknown>;
+  const servers = config.mcpServers;
+
+  if (servers !== undefined && (typeof servers !== 'object' || servers === null || Array.isArray(servers))) {
+    return { contents: existing, changed: false, error: '.mcp.json has a non-object "mcpServers"; left untouched.' };
+  }
+
+  const table = (servers ?? {}) as Record<string, unknown>;
+  const present = Object.prototype.hasOwnProperty.call(table, MCP_SERVER_KEY);
+  if (present && !options.force) {
+    return { contents: existing, changed: false };
+  }
+
+  const next = { ...config, mcpServers: { ...table, [MCP_SERVER_KEY]: MCP_SERVER_ENTRY } };
+  return { contents: `${JSON.stringify(next, null, 2)}\n`, changed: true };
+}
 
 /* -------------------------------------------------------------------------- */
 /* GitHub Actions workflow                                                    */
@@ -332,6 +409,12 @@ export function buildScaffold(options: InitOptions): ScaffoldFile[] {
     });
   }
   files.push({
+    relativePath: '.mcp.json',
+    contents: '', // produced by mergeMcpConfig so existing servers survive
+    mode: 'merge',
+    description: 'MCP server config — lets Claude Code/Desktop, Cursor and Codex call the scanner',
+  });
+  files.push({
     relativePath: '.vibe-shieldignore',
     contents: IGNORE_TEMPLATE,
     mode: 'write',
@@ -353,7 +436,7 @@ const exists = async (file: string): Promise<boolean> => {
 /** Write the scaffold into `options.rootDir`. Idempotent unless `force`. */
 export async function installScaffold(options: InitOptions): Promise<InitResult> {
   const rootDir = path.resolve(options.rootDir);
-  const result: InitResult = { written: [], appended: [], skipped: [], warnings: [] };
+  const result: InitResult = { written: [], appended: [], skipped: [], blocked: [], warnings: [] };
   const files = buildScaffold(options);
 
   for (const file of files) {
@@ -381,6 +464,37 @@ export async function installScaffold(options: InitOptions): Promise<InitResult>
       const separator = current.trim().length ? (current.endsWith('\n') ? '\n' : '\n\n') : '';
       await fs.appendFile(absolute, `${separator}${file.contents}`, 'utf8');
       result.appended.push(file.relativePath);
+      continue;
+    }
+
+    if (file.mode === 'merge') {
+      let existing: string | null = null;
+      if (present) {
+        try {
+          existing = await fs.readFile(absolute, 'utf8');
+        } catch {
+          existing = null;
+        }
+      }
+      const merged = mergeMcpConfig(existing, { force: options.force });
+      if (merged.error) {
+        // Not a `skipped` entry: `--force` cannot repair invalid JSON, so the
+        // summary must not suggest it can.
+        result.warnings.push(merged.error);
+        result.blocked.push(file.relativePath);
+        continue;
+      }
+      if (!merged.changed) {
+        result.skipped.push(file.relativePath);
+        continue;
+      }
+      if (options.dryRun) {
+        result.written.push(file.relativePath);
+        continue;
+      }
+      await fs.mkdir(path.dirname(absolute), { recursive: true });
+      await fs.writeFile(absolute, merged.contents, 'utf8');
+      result.written.push(file.relativePath);
       continue;
     }
 
