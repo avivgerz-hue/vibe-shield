@@ -120,8 +120,12 @@ export interface ReportOptions {
 
 const DEFAULT_WIDTH = 100;
 
+/** Shown instead of a grade when discovery matched nothing: silence is not a pass. */
+export const NOTHING_SCANNED = '⚠  NO FILES SCANNED — this is not a pass';
+
 /** The one-line verdict, e.g. `💀 GRADE F — 0/100 · 6 critical`. */
 export function verdictLine(result: ScanResult, color: Colorizer): string {
+  if (result.stats.filesScanned === 0) return color.yellow(NOTHING_SCANNED);
   const icon = GRADE_ICON[result.score.grade] ?? '•';
   const grade = color.bold(severityPaint(color, result.score.counts.critical > 0 ? 'critical' : result.score.counts.high > 0 ? 'high' : result.score.counts.medium > 0 ? 'medium' : 'low')(result.score.grade));
   const counts = (['critical', 'high', 'medium', 'low'] as const)
@@ -141,7 +145,6 @@ function renderHeader(result: ScanResult, color: Colorizer, width: number): stri
   lines.push(color.dim(`target  ${truncate(result.rootDir, width - 10)}`));
   lines.push('');
   lines.push(verdictLine(result, color));
-  lines.push('');
   return lines;
 }
 
@@ -219,12 +222,16 @@ function renderCategories(result: ScanResult, color: Colorizer): string[] {
 function renderStats(result: ScanResult, color: Colorizer): string[] {
   const { stats } = result;
   const parts = [
-    `${stats.filesScanned} files`,
-    `${(stats.bytesScanned / 1024).toFixed(0)} KiB`,
+    `${stats.filesScanned} ${stats.filesScanned === 1 ? 'file' : 'files'}`,
+  ];
+  parts.push(stats.bytesScanned >= 1024
+    ? `${(stats.bytesScanned / 1024).toFixed(0)} KiB`
+    : `${stats.bytesScanned} B`);
+  parts.push(
     `${stats.filesPerSecond} files/s`,
     `${stats.durationMs} ms`,
     `${result.ruleCount} rules`,
-  ];
+  );
   if (stats.cacheHits > 0) parts.push(`${stats.cacheHits} cached`);
   if (result.suppressedCount > 0) parts.push(`${result.suppressedCount} suppressed`);
   const line = color.dim(`  ${parts.join('  ·  ')}`);
@@ -234,9 +241,19 @@ function renderStats(result: ScanResult, color: Colorizer): string[] {
 /** Next steps, tailored to what was found. */
 function renderFooter(result: ScanResult, color: Colorizer): string[] {
   const lines: string[] = [''];
+  if (result.stats.filesScanned === 0) {
+    for (const notice of result.notices) lines.push(color.dim(`  ${notice}`));
+    lines.push(color.dim('  No grade is given for an empty scan — check the path, --include-docs/--include-tests, and .vibe-shieldignore.'));
+    return lines;
+  }
   if (result.findings.length === 0) {
     lines.push(color.green('  Nothing to fix. Keep the shield up. 🛡️'));
-    for (const notice of result.notices) lines.push(color.dim(`  ${notice}`));
+    // The engine's "no vulnerabilities found" notice says the same thing in
+    // different words; drop it so a clean run stays one line.
+    for (const notice of result.notices) {
+      if (/^no vulnerabilities found/i.test(notice)) continue;
+      lines.push(color.dim(`  ${notice}`));
+    }
     return lines;
   }
   const worst = result.findings[0]?.severity ?? 'info';
@@ -257,7 +274,11 @@ export function renderConsoleReport(result: ScanResult, options: ReportOptions =
   const width = options.width ?? process.stdout.columns ?? DEFAULT_WIDTH;
   const lines: string[] = [];
   lines.push(...renderHeader(result, color, width));
-  lines.push(...histogram(result, color));
+  const bars = histogram(result, color);
+  if (bars.length) {
+    lines.push('');
+    lines.push(...bars);
+  }
   lines.push(...renderCategories(result, color));
   if (result.findings.length) {
     lines.push('');

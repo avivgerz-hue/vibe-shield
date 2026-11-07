@@ -13,6 +13,7 @@
  * which is what lets the test suite drive the real CLI without a build step.
  */
 
+import { existsSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { auditSkills } from '../src/mcp-guard/skill-auditor';
@@ -239,12 +240,14 @@ async function emitReport(
   }
 
   if (options.quiet) {
-    // One line: grade + counts. Machine-friendly and CI-log friendly.
+    // One line: verdict + counts. Machine-friendly and CI-log friendly.
     const counts = result.score.counts;
+    const files = `${result.stats.filesScanned} ${result.stats.filesScanned === 1 ? 'file' : 'files'}`;
+    const verdict = result.stats.filesScanned === 0 ? '0 files scanned — not a pass' : `${result.score.score}/100 ${result.score.grade}`;
     write(
       io,
       'stdout',
-      `${result.score.score}/100 ${result.score.grade} — ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low (${result.stats.filesScanned} files)\n`,
+      `${verdict} — ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low (${files})\n`,
     );
   } else if (options.format === 'console') {
     reportConsole(result, io.stdout, {
@@ -297,6 +300,13 @@ async function commandScan(parsed: ParsedArgs, io: CliIo): Promise<number> {
   const rules = ruleSelectors.length ? selectRules(ruleSelectors) : undefined;
   if (ruleSelectors.length && (!rules || rules.length === 0)) {
     write(io, 'stderr', `vibe-shield: no rules matched --rules "${ruleSelectors.join(',')}"\n`);
+    return EXIT_USAGE;
+  }
+
+  // A typo in the path must not look like a clean pass.
+  const missing = parsed.positionals.filter((target) => !existsSync(path.resolve(io.cwd, target)));
+  if (missing.length) {
+    write(io, 'stderr', `vibe-shield: no such file or directory: ${missing.join(', ')}\n`);
     return EXIT_USAGE;
   }
 

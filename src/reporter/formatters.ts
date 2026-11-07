@@ -79,7 +79,7 @@ export function formatCompact(result: ScanResult): string {
   );
   const counts = result.score.counts;
   lines.push(
-    `${result.score.score}/100 (${result.score.grade}) — ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low, ${counts.info} info across ${result.stats.filesScanned} files`,
+    `${result.score.score}/100 (${result.score.grade}) — ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low, ${counts.info} info across ${result.stats.filesScanned} ${result.stats.filesScanned === 1 ? 'file' : 'files'}`,
   );
   return `${lines.join('\n')}\n`;
 }

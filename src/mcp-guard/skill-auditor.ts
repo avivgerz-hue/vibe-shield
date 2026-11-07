@@ -1063,6 +1063,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
 
   const findings: Finding[] = [];
   const scanned: string[] = [];
+  let bytesScanned = 0;
 
   for (const absolutePath of files) {
     let content: string;
@@ -1074,6 +1075,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
     const ctx = createFileContext(absolutePath, rootDir, content, project);
     if (ctx.flags.isLockfile || ctx.flags.isGenerated) continue;
     scanned.push(ctx.relativePath);
+    bytesScanned += Buffer.byteLength(content, 'utf8');
     options.onFile?.(ctx.relativePath);
     for (const rule of rules) {
       if (rule.appliesTo && !rule.appliesTo(ctx)) continue;
@@ -1137,13 +1139,13 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
       filesDiscovered: files.length,
       filesScanned: scanned.length,
       filesSkipped: files.length - scanned.length,
-      bytesScanned: 0,
+      bytesScanned,
       rulesExecuted: rules.length,
       ruleInvocations: scanned.length * rules.length,
       cacheHits: 0,
       durationMs: finished - started,
       filesPerSecond: Math.round(scanned.length / Math.max(0.001, (finished - started) / 1000)),
-      megabytesPerSecond: 0,
+      megabytesPerSecond: Number((bytesScanned / 1024 / 1024 / Math.max(0.001, (finished - started) / 1000)).toFixed(2)),
     },
     scannedPaths: scanned,
     startedAt,

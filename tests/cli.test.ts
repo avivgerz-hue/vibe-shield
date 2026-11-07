@@ -224,6 +224,21 @@ describe('scan', () => {
     }
   });
 
+  it('treats a nonexistent target as a usage error, not a clean pass', async () => {
+    const project = makeProject({});
+    const io = makeIo(project.root);
+    expect(await run(['scan', 'nope-does-not-exist'], io)).toBe(2);
+    expect(io.err()).toMatch(/no such file or directory/i);
+  });
+
+  it('never reports an empty scan as a passing grade', async () => {
+    const project = makeProject({ 'README.md': '# docs only\n' });
+    const io = makeIo(project.root);
+    expect(await run(['scan', '--quiet'], io)).toBe(0);
+    expect(io.out()).toMatch(/0 files scanned — not a pass/);
+    expect(io.out()).not.toMatch(/A\+/);
+  });
+
   it('rejects an unknown --fail-on with exit 2', async () => {
     const project = makeProject({});
     try {

@@ -294,14 +294,16 @@ on the line that introduced it.
 ### Any other CI
 
 ```bash
-npx vibe-shield scan --fail-on high                        # exit 1 on findings
-npx vibe-shield scan --format compact                      # one line per finding
-npx vibe-shield scan --format json > vibe-shield.json      # full report
-npx vibe-shield scan --format summary                      # counts + grade
-npx vibe-shield scan --format github                       # workflow annotations
+npx vibe-shield scan --fail-on high                         # exit 1 on findings
+npx vibe-shield scan --format compact                       # one line per finding
+npx vibe-shield scan --format json > vibe-shield.json       # full report
+npx vibe-shield scan --format summary                       # JSON, counts + grade only
+npx vibe-shield scan --format github                        # workflow annotations
 ```
 
-Exit codes: **0** clean · **1** findings at/above `--fail-on` · **2** usage error.
+Exit codes: **0** clean · **1** findings at/above `--fail-on` · **2** usage error
+(including a target path that does not exist). An empty scan prints
+`NO FILES SCANNED — this is not a pass` and is never reported as a grade.
 
 ---
 
@@ -327,14 +329,21 @@ This repository runs its own gate on every commit and in CI:
 
 ```console
 $ npx vibe-shield scan
+🛡️  vibe-shield v1.0.0 · security scan
+target  /you/vibe-shield
+
 🏆 GRADE A+ — 100/100
 
-  19 files  ·  168 KiB  ·  198 files/s  ·  96 ms  ·  48 rules
+  21 files  ·  172 KiB  ·  236 files/s  ·  89 ms  ·  48 rules
 
   Nothing to fix. Keep the shield up. 🛡️
 
 $ npx vibe-shield audit-skills
 🏆 GRADE A+ — 100/100
+
+  1 file  ·  6 KiB  ·  14 files/s  ·  69 ms  ·  12 rules
+
+  Nothing to fix. Keep the shield up. 🛡️
 ```
 
 The detector catalogue is the one place that must contain the exact vulnerable
@@ -409,7 +418,7 @@ vibe-shield version | help
 | `--include-docs` | off | Include Markdown and `docs/` |
 | `--cache` | off | Reuse `.vibe-shield-cache.json` |
 | `--max-findings <n>` | 50 | Console list cap (`0` = all) |
-| `--quiet` | off | One-line verdict |
+| `--quiet` | off | One-line verdict (`100/100 A+ — 0 critical, …`) |
 | `--no-color` | auto | Disable ANSI (also honours `NO_COLOR`) |
 
 ---

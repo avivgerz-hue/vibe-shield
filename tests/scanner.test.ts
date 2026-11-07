@@ -27,6 +27,7 @@ import { findSecrets } from '../src/secrets/patterns';
 import { formatGithub, formatJson, formatSarif, formatSummary } from '../src/reporter/formatters';
 import { buildPatchPrompt, writePatchPrompt } from '../src/reporter/patch-prompt-writer';
 import { renderConsoleReport } from '../src/reporter/console-reporter';
+import { auditSkills } from '../src/mcp-guard/skill-auditor';
 import type { Finding, ScanResult } from '../src/scanner/types';
 import { byRule, expectNoRule, expectRule, makeProject, scan } from './helpers';
 
@@ -631,6 +632,28 @@ describe('reporters', () => {
     const text = renderConsoleReport(result).join('\n');
     expect(text).toContain('A+');
     expect(text).toContain('Nothing to fix');
+  });
+
+  it('never dresses an empty scan up as a pass', async () => {
+    const empty = await scanProject({ rootDir: path.join(VULNERABLE, 'does-not-exist'), useGitIndex: false });
+    const text = renderConsoleReport(empty).join('\n');
+    expect(empty.stats.filesScanned).toBe(0);
+    expect(text).toContain('NO FILES SCANNED');
+    expect(text).not.toContain('Nothing to fix');
+    expect(text).not.toContain('A+');
+  });
+
+  it('does not repeat the all-clear message on a clean run', async () => {
+    const result = await scanProject({ rootDir: SECURE, useGitIndex: false });
+    const text = renderConsoleReport(result).join('\n');
+    expect(text.match(/nothing to fix/gi)).toHaveLength(1);
+    expect(text).not.toMatch(/no vulnerabilities found/i);
+  });
+
+  it('pluralises the file count and reports auditor bytes', async () => {
+    const single = await auditSkills(SECURE, { paths: ['AGENTS.md'] });
+    expect(renderConsoleReport(single).join('\n')).toMatch(/\b1 file\b/);
+    expect(single.stats.bytesScanned).toBeGreaterThan(0);
   });
 
   it('emits valid JSON with schemaVersion', async () => {

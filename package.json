@@ -57,8 +57,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "scan:self": "node dist/bin/vibe-shield.js scan .",
-    "audit:self": "node dist/bin/vibe-shield.js audit-skills .",
+    "scan:self": "node dist/bin/vibe-shield.js scan",
+    "audit:self": "node dist/bin/vibe-shield.js audit-skills",
     "verify": "npm run typecheck && npm run build && npm test && npm run scan:self && npm run audit:self",
     "prepublishOnly": "npm run verify"
   },
