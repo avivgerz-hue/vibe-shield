@@ -88,6 +88,14 @@ const isBrowserFile = (ctx: FileContext): boolean => ctx.flags.isClientComponent
 const isDocumentationExample = (ctx: FileContext): boolean =>
   ctx.language === 'markdown' || ctx.flags.isDocumentation;
 
+/**
+ * Same idea for templates shipped as code: `init/scaffold.ts` holds the SKILL.md
+ * and AGENTS.md text, which necessarily quotes the vulnerable shapes it teaches
+ * the agent to fix. The file is documentation in a .ts container.
+ */
+const isTemplateMaterial = (ctx: FileContext): boolean =>
+  /(?:^|\/)src\/(?:init\/scaffold|mcp-guard\/skill-auditor)\.ts$/.test(ctx.relativePath);
+
 const looksLikeRealSecret = (value: string): boolean => {
   const trimmed = value.trim();
   if (trimmed.length < 16) return false;
@@ -122,6 +130,7 @@ const publicEnvSecret: Rule = defineRule({
     'https://supabase.com/docs/guides/api/api-keys',
   ],
   pathPatterns: [/\.(?:[cm]?[jt]sx?|vue|svelte|json|ya?ml|toml|env|ex|exs|tf|[cm]?js)$|(?:^|\/)\.env/i],
+  appliesTo: (ctx) => !isDocumentationExample(ctx) && !isTemplateMaterial(ctx),
   detect(ctx) {
     const hits: RuleHit[] = [];
     for (const match of ctx.code.matchAll(PUBLIC_SECRET_ENV_REGEX)) {
@@ -165,7 +174,7 @@ const clientProcessEnv: Rule = defineRule({
   ],
   pathPatterns: [/\.(?:[cm]?[jt]sx?|vue|svelte)$/i],
   skipFlags: ['isTestFile', 'isDocumentation', 'isGenerated', 'isLockfile'],
-  appliesTo: (ctx) => isBrowserFile(ctx) && !isDocumentationExample(ctx),
+  appliesTo: (ctx) => isBrowserFile(ctx) && !isDocumentationExample(ctx) && !isTemplateMaterial(ctx),
   detect(ctx) {
     const hits: RuleHit[] = [];
     for (const match of ctx.code.matchAll(/\bprocess\.env\.([A-Za-z_][A-Za-z0-9_]*)/g)) {

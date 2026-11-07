@@ -253,6 +253,26 @@ describe('engine', () => {
     expect(new Set(hits.map((hit) => hit.line)).size).toBe(2);
   });
 
+  it('does not flag vulnerable examples quoted in documentation templates', async () => {
+    // scaffold.ts ships the SKILL.md text, which teaches the shape it warns
+    // about. Treating the template body as live code makes the tool fail its
+    // own gate and, worse, tells every user to rotate a key that never existed.
+    const result = await scanProject({
+      rootDir: path.join(__dirname, '..'),
+      paths: ['src/init/scaffold.ts'],
+      useGitIndex: false,
+    });
+    expect(result.stats.filesScanned).toBe(1);
+    expect(byRule(result, 'VSB-CLIENT-001')).toHaveLength(0);
+  });
+
+  it('still flags the same shape outside a documentation template', async () => {
+    const result = await scan({
+      'src/init/other.ts': 'const scaffold = `const key = process.env.NEXT_PUBLIC_OPENAI_API_KEY;`;\n',
+    });
+    expect(byRule(result, 'VSB-CLIENT-001').length).toBeGreaterThan(0);
+  });
+
   it('records exact line and column for every finding', async () => {
     const result = await scan({
       'app/api/users/route.ts': [
