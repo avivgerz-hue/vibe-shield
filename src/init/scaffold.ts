@@ -60,72 +60,76 @@ const BANNER = '<!-- Managed by vibe-shield. Edit freely; `npx vibe-shield init 
 
 export const SKILL_TEMPLATE = `---
 name: vibe-shield
-description: Audit any change for AI-introduced security bugs (leaked keys, unguarded routes, disabled RLS, prompt injection) before reporting a task as done. Use whenever you write or modify application code, API routes, database migrations, auth checks, environment variables, LLM calls or webhook handlers.
-allowed-tools: Bash(npx vibe-shield scan*), Read(./**), Grep, Glob
+description: Audit any change for AI-introduced security bugs (leaked keys, unguarded API routes, disabled Row Level Security, SQL injection, prompt injection, poisoned MCP servers) and fix them before reporting a task as done. Use whenever you write or modify application code, API routes, server actions, database migrations, auth logic, environment variables, LLM calls, webhook handlers, agent skills or MCP configuration.
+allowed-tools: Bash(npx vibe-shield scan*), Bash(npx vibe-shield audit-skills*), Bash(npx vibe-shield explain*), Read(./**), Grep, Glob
+license: MIT
+metadata:
+  author: VibeFoundry
+  homepage: https://github.com/avivgerz-hue/vibe-shield
+  version: 1.0.0
 ---
-
-${BANNER}
 
 # vibe-shield
 
-You are not allowed to say "done" until the code you just wrote passes a
-security audit. This skill tells you exactly how to run it and what to do with
-the result.
+You are not allowed to say "done" until the code you just wrote passes a security audit.
+
+AI coding agents ship a specific, repeatable class of vulnerability: a \`SUPABASE_SERVICE_ROLE_KEY\` behind a \`NEXT_PUBLIC_\` prefix, a \`DELETE\` route handler with no session check, a \`CREATE TABLE\` with no \`ENABLE ROW LEVEL SECURITY\`, a tool whose \`execute\` forwards model output into \`exec\`. These are not exotic — they are the default shape of code written quickly by something optimising for "it works". This skill is the second pair of eyes.
 
 ## When to run
 
 Run the audit **after every change that touches**:
 
-- an API route, route handler, server action or RPC endpoint
-- authentication, session, role or ownership logic
-- a database migration, policy, grant or Supabase table
-- an environment variable, config file or \`.env*\` file
-- anything that calls an LLM, a tool, a webhook or a shell command
-- \`.claude/\`, \`.cursor/\`, \`AGENTS.md\`, \`mcp.json\` or any skill/config file you added
+- an API route, route handler, server action, RPC endpoint or GraphQL mutation
+- authentication, session, role, permission or ownership logic
+- a database migration, policy, grant, schema or Supabase table
+- an environment variable, config file, \`.env*\` file or build config
+- anything calling an LLM, a tool, a webhook, a shell command or the filesystem
+- \`.claude/\`, \`.cursor/\`, \`AGENTS.md\`, \`mcp.json\` or any skill/config file
 
 If you did not touch any of those, you do not need to run it.
 
 ## The loop
 
 \`\`\`bash
-# 1. Scan the repo (fast: whole-repo scans finish in well under a second)
+# 1. Scan (a whole-repo scan finishes in well under a second)
 npx vibe-shield scan --fail-on high
 
-# 2. If that fails, generate the machine-readable fix list
+# 2. If it fails, generate the machine-readable fix list
 npx vibe-shield scan --fix-prompt
 
-# 3. Read SECURITY_PATCH_PROMPT.md and fix every finding, top to bottom
-#    (critical first — those are exploitable right now)
+# 3. Read SECURITY_PATCH_PROMPT.md and fix every finding, critical first
+#    Each entry has the exact file:line, the vulnerable snippet, the CWE and
+#    the required change. Apply it literally.
 
 # 4. Re-run until it exits 0
 npx vibe-shield scan --fail-on high
 \`\`\`
 
-\`--fail-on high\` exits non-zero when a high or critical finding exists, which is
-exactly the gate you must not bypass.
+\`--fail-on high\` exits non-zero while any high or critical finding exists. That is the gate.
 
-## What each finding gives you
+## Reading a finding
 
-| Field | Use it for |
+\`\`\`
+CRITICAL 47:15    VSB-CLIENT-001  Server-only secret exposed through a public environment prefix
+         const key = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+\`\`\`
+
+| Part | Meaning |
 | --- | --- |
-| \`file:line\` | the exact place to edit — never guess |
-| \`CWE\` | the bug class; search it if the fix is unclear |
-| vulnerable snippet | what to delete or replace |
-| remediation list | the ordered steps to apply |
-| secure example | the shape the code must have when you are done |
+| \`47:15\` | exact line and column to edit |
+| \`VSB-CLIENT-001\` | rule id — use it with \`explain\` for full docs |
+| message | why this specific line is exploitable |
+| \`(CWE-200)\` | bug class, for a deeper search if the fix is unclear |
+
+Need the full picture? \`npx vibe-shield explain VSB-CLIENT-001\` prints the vulnerable shape, the fixed shape, remediation steps and references.
 
 ## Hard rules
 
-1. **Fix the root cause.** Do not delete the auth check, disable RLS, silence the
-   log or catch-and-ignore to make the finding disappear.
-2. **Never suppress.** Do not add \`// vibe-shield-disable\`, do not edit
-   \`.vibe-shieldignore\`, and do not pass \`--ignore\` to hide a real finding.
-   Suppression is a decision for the human, not for you.
-3. **Rotate exposed credentials.** If the scan found a live key, tell the user to
-   rotate it at the provider. Removing the line does not un-leak it.
-4. **Report honestly.** If you cannot fix a finding (you need a decision, a
-   credential or a provider change), say so explicitly with the finding id.
-5. **Re-verify.** A fix is not finished until \`npx vibe-shield scan\` passes.
+1. **Fix the root cause.** Never delete an auth check, disable RLS, silence a log or add a catch-all \`catch {}\` to make the finding disappear.
+2. **Never suppress.** Do not add \`// vibe-shield-disable\`, do not edit \`.vibe-shieldignore\`, do not pass \`--ignore\`. Suppression is a decision for the human.
+3. **Rotate exposed credentials.** If the scan reported a live key, tell the user to rotate it at the provider in the same message. Removing the line does not un-leak it — the value may already be in a bundle, a cache or a git history.
+4. **Report honestly.** If you cannot fix a finding (you need a decision, a credential or a provider change), say so explicitly, name the rule id, and stop.
+5. **Re-verify.** A fix is not finished until the gate exits 0.
 
 ## Agent surface audit
 
@@ -135,28 +139,44 @@ When you add or modify a skill, rule file, MCP server or instruction file, also 
 npx vibe-shield audit-skills
 \`\`\`
 
-It detects hidden Unicode, exfiltration commands, credential harvesting, unpinned
-MCP servers, over-broad tool permissions and other agent-poisoning patterns —
-including in files you just wrote.
+Twelve \`VSB-AGENT-*\` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), \`curl\`/\`wget\` exfiltration of environment variables, credential-harvesting instructions (\`.env\`, \`~/.ssh\`, \`~/.aws\`), unpinned or remote MCP servers, literal tokens in an \`env\` block, safety-override language, over-broad tool permissions, base64 \`eval\` payloads, remote-instruction fetching, wildcard \`allowed-tools\`, and shell injection in skill scripts.
 
-## Useful flags
+Each finding carries a \`triage\` field: \`block\` means refuse and escalate, \`review\` means ask the user, \`report\` means mention it and continue. Do not blanket-refuse a repository because a rule fired — read the triage.
+
+## Flags worth knowing
 
 | Flag | Effect |
 | --- | --- |
-| \`--format json\` | full machine-readable report |
+| \`--format json\` | full machine-readable report (schemaVersion 1) |
 | \`--format sarif\` | SARIF 2.1.0 for GitHub code scanning |
 | \`--format compact\` | one line per finding |
+| \`--format github\` | inline GitHub Actions annotations |
 | \`--severity high\` | only report high and critical |
-| \`--include-tests\` | include test/fixture files |
-| \`--explain <RULE_ID>\` | full documentation for one rule |
-| \`npx vibe-shield rules\` | list every rule and what it catches |
+| \`--fail-on medium\` | stricter gate |
+| \`--include-tests\` | include test and fixture files |
+| \`--cache\` | reuse results between runs |
+| \`--quiet\` | one-line verdict (ideal for piping) |
+| \`rules\` | list every rule |
+| \`explain <RULE_ID>\` | full documentation for one rule |
 
 ## Definition of done
 
-- [ ] \`npx vibe-shield scan --fail-on high\` exits 0
-- [ ] \`npx vibe-shield audit-skills\` exits 0 (if you touched agent files)
+- [ ] \`npx vibe-shield scan --fail-on high\` exits \`0\`
+- [ ] \`npx vibe-shield audit-skills\` exits \`0\` if you touched agent files
 - [ ] every credential the scan surfaced has been flagged to the user for rotation
-- [ ] the feature still works and existing tests still pass
+- [ ] no suppression directive was added
+- [ ] the feature still works and the existing tests still pass
+
+## Install it into a repository
+
+\`\`\`bash
+npx vibe-shield init
+\`\`\`
+
+That writes this file to \`.claude/skills/vibe-shield/SKILL.md\`, appends a security
+gate section to \`AGENTS.md\`, adds a \`.cursor/rules/vibe-shield.mdc\`, and installs a
+GitHub Actions workflow that fails the pull request on new high or critical
+findings. Every future task in that repository starts guarded.
 `;
 
 /* -------------------------------------------------------------------------- */

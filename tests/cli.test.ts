@@ -9,6 +9,7 @@ import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { parseArgs, run, type CliIo } from '../bin/vibe-shield';
+import { SKILL_TEMPLATE } from '../src/init/scaffold';
 import { makeProject } from './helpers';
 
 interface CapturedIo extends CliIo {
@@ -354,6 +355,23 @@ describe('init', () => {
       expect(io.out()).toContain('skipped');
       const agents = readFileSync(path.join(project.root, 'AGENTS.md'), 'utf8');
       expect(agents.split('## Security gate (vibe-shield)').length - 1).toBe(1);
+    } finally {
+      project.cleanup();
+    }
+  });
+
+  it('installs the canonical SKILL.md, not a stale copy of it', () => {
+    const canonical = readFileSync(path.join(__dirname, '..', 'SKILL.md'), 'utf8');
+    expect(SKILL_TEMPLATE).toBe(canonical);
+  });
+
+  it('ships a skill that passes its own agent audit', async () => {
+    const project = makeProject({ 'package.json': JSON.stringify({ name: 'x' }) });
+    try {
+      expect(await run(['init', '--agent', 'claude'], makeIo(project.root))).toBe(0);
+      const io = makeIo(project.root);
+      expect(await run(['audit-skills'], io)).toBe(0);
+      expect(io.out()).toContain('A+');
     } finally {
       project.cleanup();
     }
