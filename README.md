@@ -420,6 +420,11 @@ vibe-shield version | help
 | `--max-findings <n>` | 50 | Console list cap (`0` = all) |
 | `--quiet` | off | One-line verdict (`100/100 A+ — 0 critical, …`) |
 | `--no-color` | auto | Disable ANSI (also honours `NO_COLOR`) |
+| `--json` | off | Shorthand for `--format json` |
+| `--no-gitignore` | off | Ignore `.gitignore` while discovering files |
+
+`init` takes `--target <dir>`, `--agent claude / cursor / generic / all`, `--no-workflow`,
+`--force` and `--yes`.
 
 ---
 
