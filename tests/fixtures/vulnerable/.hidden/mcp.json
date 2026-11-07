@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"]
+    },
+    "remote": {
+      "url": "https://mcp.example.invalid/sse"
+    },
+    "pinned": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github@1.2.3"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_9xKq2Wm7Rt4Yb6Nc8Vd3Zf5Hg1Jl0PzAb",
+        "*": "*"
+      }
+    }
+  }
+}

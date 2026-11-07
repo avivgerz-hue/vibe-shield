@@ -1,0 +1,72 @@
+{
+  "name": "vibe-shield",
+  "version": "1.0.0",
+  "description": "High-speed static security analyzer and MCP/agent-skill guard for AI-generated codebases. Catches the vulnerabilities autonomous coding agents ship: leaked secrets, unguarded mutation routes, missing Postgres RLS, unverified webhooks, prompt injection sinks and XSS.",
+  "keywords": [
+    "security",
+    "static-analysis",
+    "sast",
+    "appsec",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "cursor",
+    "windsurf",
+    "mcp",
+    "agent-skills",
+    "nextjs",
+    "supabase",
+    "stripe",
+    "prompt-injection",
+    "secrets",
+    "owasp",
+    "cwe",
+    "sarif",
+    "devsecops"
+  ],
+  "license": "MIT",
+  "author": "VibeFoundry",
+  "homepage": "https://github.com/avivgerz-hue/vibe-shield#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avivgerz-hue/vibe-shield.git"
+  },
+  "bugs": {
+    "url": "https://github.com/avivgerz-hue/vibe-shield/issues"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "bin": {
+    "vibe-shield": "./dist/bin/vibe-shield.js"
+  },
+  "files": [
+    "dist/bin",
+    "dist/src",
+    "SKILL.md",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && node scripts/postbuild.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "scan:self": "node dist/bin/vibe-shield.js scan .",
+    "audit:self": "node dist/bin/vibe-shield.js audit-skills .",
+    "verify": "npm run typecheck && npm run build && npm test && npm run scan:self && npm run audit:self",
+    "prepublishOnly": "npm run verify"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@vitest/coverage-v8": "^5.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

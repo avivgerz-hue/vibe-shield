@@ -1,0 +1,22 @@
+# .vibe-shieldignore — gitignore syntax.
+#
+# vibe-shield scans its own repository in CI (`npm run verify`). The detector
+# catalogue is the one place that *must* contain literally vulnerable code and
+# the exact credential shapes the rules match on, so it is excluded here rather
+# than weakened. This is the same approach gitleaks and semgrep take for their
+# own rule packs; every exclusion below is deliberate and reviewed.
+
+# The detector catalogue: deliberately vulnerable examples + the literal tokens
+# the rules match on (regex vocabulary, vendor key formats, file-shape probes).
+src/scanner/rules/
+src/scanner/lexicon.ts
+src/secrets/patterns.ts
+src/mcp-guard/skill-auditor.ts
+
+# Fixtures are intentionally broken applications used by the test suite.
+tests/fixtures/
+
+# Build output and dependency trees (also pruned by the engine).
+dist/
+node_modules/
+coverage/

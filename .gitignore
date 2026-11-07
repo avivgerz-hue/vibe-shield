@@ -1,0 +1,28 @@
+# Build output
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Test + coverage artifacts
+coverage/
+.vitest-cache/
+
+# Scanner cache
+.vibe-shield-cache.json
+
+# Generated agent artefacts (created by `vibe-shield scan --fix-prompt`)
+SECURITY_PATCH_PROMPT.md
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
