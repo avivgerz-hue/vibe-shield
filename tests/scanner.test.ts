@@ -117,6 +117,10 @@ describe('rule catalogue', () => {
 describe('fixtures', () => {
   it('finds the full set of critical issues in the vulnerable app', async () => {
     const result = await scanProject({ rootDir: VULNERABLE, includeDocs: true, useGitIndex: false });
+    // The count guards against a fixture file silently disappearing from a
+    // checkout (.env* was once gitignored), which would weaken every assertion
+    // below without failing them.
+    expect(result.stats.filesScanned).toBe(21);
     expect(result.findings.length).toBeGreaterThan(20);
     expect(result.score.grade).toBe('F');
     expect(result.score.score).toBeLessThan(30);
