@@ -73,6 +73,7 @@ SCAN OPTIONS
   --max-findings <n>     Limit the console list (0 = all).   (50)
   --quiet                Print only the verdict line and the exit code.
   --no-color             Disable ANSI colour.
+  --no-shield-ignore     Ignore .vibe-shieldignore (e.g. to scan excluded fixtures).
   --json                 Shorthand for --format json.
 
 INIT OPTIONS
@@ -108,6 +109,7 @@ const BOOLEAN_FLAGS = new Set([
   'include-docs',
   'cache',
   'quiet',
+  'no-shield-ignore',
   'no-color',
   'json',
   'no-workflow',
@@ -321,6 +323,7 @@ async function commandScan(parsed: ParsedArgs, io: CliIo): Promise<number> {
     includeDocs: flagBool(parsed, 'include-docs') ? true : undefined,
     cache: flagBool(parsed, 'cache'),
     useGitignore: !flagBool(parsed, 'no-gitignore'),
+    useShieldIgnore: flagBool(parsed, 'no-shield-ignore') ? false : undefined,
   });
 
   const filtered: typeof result =
@@ -338,6 +341,14 @@ async function commandScan(parsed: ParsedArgs, io: CliIo): Promise<number> {
     quiet: flagBool(parsed, 'quiet'),
     maxFindings: flagNumber(parsed, 'max-findings', 50),
   }, parsed);
+
+  // An explicit target that matched nothing is a configuration error, not a
+  // pass: a CI gate pointed at a path excluded by an ignore file would
+  // otherwise report success forever without scanning a single file.
+  if (parsed.positionals.length > 0 && filtered.stats.filesScanned === 0) {
+    write(io, 'stderr', `vibe-shield: no scannable files matched ${parsed.positionals.join(', ')} (check ignore files, or pass --no-shield-ignore)\n`);
+    return EXIT_USAGE;
+  }
 
   return hasFindingsAtOrAbove(filtered, failOn) ? EXIT_FINDINGS : EXIT_OK;
 }

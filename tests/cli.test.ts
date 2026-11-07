@@ -240,6 +240,43 @@ describe('scan', () => {
     expect(io.out()).not.toMatch(/A\+/);
   });
 
+  it('fails the gate when an explicit target matches no scannable files', async () => {
+    // A CI gate pointed at an ignored path must not report success forever.
+    const project = makeProject({
+      'package.json': JSON.stringify({ name: 'x' }),
+      '.vibe-shieldignore': 'src/\n',
+      'src/app.ts': 'export const x = 1;\n',
+    });
+    try {
+      const io = makeIo(project.root);
+      expect(await run(['scan', 'src'], io)).toBe(2);
+      expect(io.err()).toMatch(/no scannable files matched/i);
+    } finally {
+      project.cleanup();
+    }
+  });
+
+  it('scans an ignored directory with --no-shield-ignore', async () => {
+    const project = makeProject({
+      'package.json': JSON.stringify({ name: 'x' }),
+      '.vibe-shieldignore': 'secret/\n',
+      'secret/a.ts': "const k = 'sk_live_7Qm3Xk9Rb2Vt6Yw4Zp8Nd5Hj1Lc0Sg';\n",
+    });
+    try {
+      // Directory targets honour the ignore file, so nothing is scannable.
+      expect(await run(['scan', 'secret'], makeIo(project.root))).toBe(2);
+
+      const allowed = makeIo(project.root);
+      expect(await run(['scan', 'secret', '--no-shield-ignore'], allowed)).toBe(1);
+      expect(allowed.out()).toMatch(/VSB-SECRET-001/);
+
+      // Naming the file itself is already an explicit override.
+      expect(await run(['scan', 'secret/a.ts'], makeIo(project.root))).toBe(1);
+    } finally {
+      project.cleanup();
+    }
+  });
+
   it('rejects an unknown --fail-on with exit 2', async () => {
     const project = makeProject({});
     try {

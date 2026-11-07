@@ -302,8 +302,10 @@ npx vibe-shield scan --format github                        # workflow annotatio
 ```
 
 Exit codes: **0** clean · **1** findings at/above `--fail-on` · **2** usage error
-(including a target path that does not exist). An empty scan prints
-`NO FILES SCANNED — this is not a pass` and is never reported as a grade.
+(a target path that does not exist, or a target that matches no scannable files).
+An empty scan prints `NO FILES SCANNED — this is not a pass` and is never
+reported as a grade — a gate pointed at an ignored path fails instead of
+succeeding forever.
 
 ---
 
@@ -422,6 +424,7 @@ vibe-shield version | help
 | `--no-color` | auto | Disable ANSI (also honours `NO_COLOR`) |
 | `--json` | off | Shorthand for `--format json` |
 | `--no-gitignore` | off | Ignore `.gitignore` while discovering files |
+| `--no-shield-ignore` | off | Ignore `.vibe-shieldignore` (e.g. to scan excluded fixtures) |
 
 `init` takes `--target <dir>`, `--agent claude / cursor / generic / all`, `--no-workflow`,
 `--force` and `--yes`.
@@ -473,7 +476,7 @@ git clone https://github.com/avivgerz-hue/vibe-shield
 cd vibe-shield
 npm ci
 npm run typecheck   # tsc --noEmit (strict, noUnusedLocals)
-npm test            # 163 Vitest tests
+npm test            # 174 Vitest tests
 npm run build       # tsc + postbuild (shebang, chmod, CJS marker)
 npm run verify      # typecheck + test + build + self-scan + self-audit
 ```

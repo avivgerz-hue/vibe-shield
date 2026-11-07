@@ -128,6 +128,8 @@ export interface ScanOptions {
   useGitignore?: boolean;
   /** Disable the git-index lookup used by the `.env` rules. */
   useGitIndex?: boolean;
+  /** Skip `.vibe-shieldignore` (still honours `.gitignore` unless disabled). */
+  useShieldIgnore?: boolean;
   /** Extra suppression directives. */
   suppressions?: string[];
   /** Progress callback, one call per scanned file. */
@@ -190,6 +192,8 @@ export async function discoverFiles(rootDir: string, options: ScanOptions = { ro
   const loadIgnoreFiles = async (dir: string): Promise<void> => {
     if (options.useGitignore === false) return;
     for (const name of IGNORE_FILE_NAMES) {
+      // `--no-shield-ignore` lets CI scan the fixtures this repo excludes.
+      if (name === '.vibe-shieldignore' && options.useShieldIgnore === false) continue;
       const file = path.join(dir, name);
       try {
         const text = await fs.readFile(file, 'utf8');
