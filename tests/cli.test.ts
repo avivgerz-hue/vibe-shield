@@ -548,6 +548,7 @@ describe('package contract', () => {
     types: string;
     files: string[];
     dependencies: Record<string, string>;
+    scripts: Record<string, string>;
     engines: { node: string };
   };
 
@@ -567,5 +568,13 @@ describe('package contract', () => {
 
   it('declares the Node floor', () => {
     expect(manifest.engines.node).toContain('18');
+  });
+
+  it('builds on install so `npx github:` works', () => {
+    // dist/ is gitignored, so a git-dependency install ships only sources.
+    // npm runs `prepare` after installing devDependencies, which is what makes
+    // `npx github:avivgerz-hue/vibe-shield` produce a runnable bin.
+    expect(manifest.scripts.prepare).toBe('npm run build');
+    expect(manifest.scripts.prepublishOnly).toContain('verify');
   });
 });

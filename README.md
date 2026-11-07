@@ -90,6 +90,13 @@ npx vibe-shield scan --fix-prompt
 npx vibe-shield init
 ```
 
+Prefer to run the tip of `main` before a release? Install straight from GitHub —
+`prepare` compiles the TypeScript on install:
+
+```bash
+npx github:avivgerz-hue/vibe-shield scan
+```
+
 `npx vibe-shield init` writes:
 
 | File | What it does |
@@ -476,7 +483,7 @@ git clone https://github.com/avivgerz-hue/vibe-shield
 cd vibe-shield
 npm ci
 npm run typecheck   # tsc --noEmit (strict, noUnusedLocals)
-npm test            # 174 Vitest tests
+npm test            # 175 Vitest tests
 npm run build       # tsc + postbuild (shebang, chmod, CJS marker)
 npm run verify      # typecheck + test + build + self-scan + self-audit
 ```

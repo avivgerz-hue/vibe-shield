@@ -132,7 +132,7 @@ const payload = Buffer.from(JSON.stringify({ role: 'service_role' })).toString('
 ```bash
 npm ci
 npm run typecheck   # must be zero errors (strict + noUnusedLocals + noUnusedParameters)
-npm test            # 174 tests
+npm test            # 175 tests
 npm run build       # tsc + postbuild
 npm run verify      # everything, including the self-scan
 ```

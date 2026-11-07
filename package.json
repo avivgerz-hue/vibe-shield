@@ -60,6 +60,7 @@
     "scan:self": "node dist/bin/vibe-shield.js scan",
     "audit:self": "node dist/bin/vibe-shield.js audit-skills",
     "verify": "npm run typecheck && npm run build && npm test && npm run scan:self && npm run audit:self",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run verify"
   },
   "dependencies": {},
