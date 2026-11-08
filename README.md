@@ -8,11 +8,11 @@ Your agent ships fast. It also ships `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`, a 
 
 vibe-shield is a **static security scanner built for that failure mode**, plus an **Agent Skill** that makes Claude Code, Codex, Cursor and Windsurf audit before they say *"done"*.
 
-[![npm version](https://img.shields.io/npm/v/vibe-shield?style=flat-square&logo=npm&color=cb3837)](https://www.npmjs.com/package/vibe-shield)
-[![npm downloads](https://img.shields.io/npm/dm/vibe-shield?style=flat-square&logo=npm&color=cb3837)](https://www.npmjs.com/package/vibe-shield)
+[![version](https://img.shields.io/github/package-json/v/avivgerz-hue/vibe-shield?style=flat-square&label=version&color=cb3837)](https://github.com/avivgerz-hue/vibe-shield/blob/main/package.json)
+[![install](https://img.shields.io/badge/install-github%3Aavivgerz--hue%2Fvibe--shield-cb3837?style=flat-square&logo=npm)](#-quick-start)
 [![CI](https://img.shields.io/github/actions/workflow/status/avivgerz-hue/vibe-shield/ci.yml?branch=main&style=flat-square&logo=githubactions&label=CI)](https://github.com/avivgerz-hue/vibe-shield/actions/workflows/ci.yml)
-[![node](https://img.shields.io/node/v/vibe-shield?style=flat-square&logo=nodedotjs&color=5fa04e)](https://www.npmjs.com/package/vibe-shield)
-[![license](https://img.shields.io/npm/l/vibe-shield?style=flat-square&color=blue)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A518.17.0-5fa04e?style=flat-square&logo=nodedotjs)](#-requirements)
+[![license](https://img.shields.io/github/license/avivgerz-hue/vibe-shield?style=flat-square&color=blue)](./LICENSE)
 [![zero dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen?style=flat-square)](./package.json)
 [![rules](https://img.shields.io/badge/detection%20signatures-60-8b5cf6?style=flat-square)](./src/scanner/rules)
 [![self-scan](https://img.shields.io/badge/self--scan-100%2F100%20A%2B-16a34a?style=flat-square)](#-it-scans-itself)

@@ -198,3 +198,22 @@ describe('distribution files exist', () => {
     }
   });
 });
+
+describe('README badges', () => {
+  // The `vibe-shield` name on the npm registry belongs to an unrelated
+  // project. A shields.io npm badge would therefore render *their* version
+  // and download count on our front page, so every badge must be backed by
+  // data we actually control (GitHub, or a literal).
+  it('never renders a badge sourced from the npm registry', () => {
+    const readme = read('README.md');
+    expect(readme).not.toMatch(/img\.shields\.io\/npm\//);
+    expect(readme).not.toMatch(/img\.shields\.io\/node\/v\//);
+    expect(readme).not.toMatch(/npmjs\.com\/package\/vibe-shield/);
+  });
+
+  it('sources the version badge from this repository', () => {
+    expect(read('README.md')).toContain(
+      'img.shields.io/github/package-json/v/avivgerz-hue/vibe-shield',
+    );
+  });
+});
