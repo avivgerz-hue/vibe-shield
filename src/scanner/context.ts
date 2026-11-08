@@ -50,7 +50,7 @@ const INSTRUCTION_FILE_NAMES = new Set([
   '.roorules',
 ]);
 
-const MCP_CONFIG_NAMES = /^(?:\.mcp|mcp|mcp-config|mcp_settings|mcp\.settings|claude_desktop_config|settings)\.json$/i;
+const MCP_CONFIG_NAMES = /^(?:\.mcp|mcp|mcp-config|mcp_settings|mcp\.settings|claude_desktop_config|settings|opencode)\.json$/i;
 
 const CI_WORKFLOW_REGEX =
   /(?:^|\/)\.github\/workflows\/[^/]+\.ya?ml$|(?:^|\/)\.gitlab-ci\.yml$|(?:^|\/)\.circleci\/config\.yml$|(?:^|\/)azure-pipelines\.yml$|(?:^|\/)\.travis\.yml$|(?:^|\/)Jenkinsfile$/i;
@@ -153,7 +153,7 @@ export function computeFlags(
     isGenerated: GENERATED_REGEX.test(relativePath),
     isAgentInstructionFile:
       INSTRUCTION_FILE_NAMES.has(lowerName) ||
-      /(?:^|\/)\.(?:claude|cursor|windsurf|cline|roo|codex|aider|continue|github)\/[^/]*\.(?:md|mdc|json|ya?ml|txt)$/i.test(relativePath) ||
+      /(?:^|\/)\.(?:claude|claude-plugin|cursor|windsurf|cline|roo|codex|agents|zed|vscode|aider|continue|github)\/[^/]*\.(?:md|mdc|json|ya?ml|txt)$/i.test(relativePath) ||
       /(?:^|\/)SKILL\.md$/i.test(relativePath),
     isMcpConfig: MCP_CONFIG_NAMES.test(fileName) || /"mcpServers"\s*:/.test(content),
     isCiWorkflow: CI_WORKFLOW_REGEX.test(relativePath),

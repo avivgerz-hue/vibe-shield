@@ -18,7 +18,7 @@ import * as path from 'node:path';
 
 import { auditSkills } from '../src/mcp-guard/skill-auditor';
 import { serveMcp } from '../src/mcp/server';
-import { installScaffold } from '../src/init/scaffold';
+import { AGENT_NAMES, installScaffold, type AgentName } from '../src/init/scaffold';
 import { reportConsole, createColorizer } from '../src/reporter/console-reporter';
 import { formatResult, isOutputFormat, OUTPUT_FORMATS, type OutputFormat } from '../src/reporter/formatters';
 import { writePatchPrompt, PATCH_PROMPT_FILENAME } from '../src/reporter/patch-prompt-writer';
@@ -82,7 +82,8 @@ SCAN OPTIONS
 
 INIT OPTIONS
   --target <dir>         Repository to install into.          (cwd)
-  --agent <kind>         claude | cursor | generic | all.      (all)
+  --agents <list|all>    Comma-separated agent names, or all.  (all)
+  --agent <kind>         Legacy single-agent option.
   --no-workflow          Skip the GitHub Actions workflow.
   --force                Overwrite existing files.
   --yes                  Accepted for non-interactive CI use (init never prompts).
@@ -142,6 +143,7 @@ const VALUE_FLAGS = new Set([
   'max-findings',
   'target',
   'agent',
+  'agents',
   'category',
 ]);
 
@@ -409,15 +411,20 @@ async function commandAuditSkills(parsed: ParsedArgs, io: CliIo): Promise<number
 
 async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
   const target = path.resolve(io.cwd, flagString(parsed, 'target') ?? '.');
-  const agent = (flagString(parsed, 'agent') ?? 'all').toLowerCase();
-  if (!['claude', 'cursor', 'generic', 'all'].includes(agent)) {
-    write(io, 'stderr', 'vibe-shield: --agent expects claude, cursor, generic or all\n');
+  if (flagString(parsed, 'agents') && flagString(parsed, 'agent')) {
+    write(io, 'stderr', 'vibe-shield: use --agent or --agents, not both\n');
+    return EXIT_USAGE;
+  }
+  const agent = (flagString(parsed, 'agents') ?? flagString(parsed, 'agent') ?? 'all').toLowerCase();
+  const requested = agent.split(',').map(value => value.trim());
+  if (!requested.length || requested.some(value => !AGENT_NAMES.includes(value as AgentName) && value !== 'all') || (requested.includes('all') && requested.length > 1)) {
+    write(io, 'stderr', `vibe-shield: --agents expects all or a comma-separated list of: ${AGENT_NAMES.join(', ')}\n`);
     return EXIT_USAGE;
   }
 
   const result = await installScaffold({
     rootDir: target,
-    agents: agent as 'claude' | 'cursor' | 'generic' | 'all',
+    agents: agent === 'all' ? 'all' : requested as AgentName[],
     workflow: !flagBool(parsed, 'no-workflow'),
     force: flagBool(parsed, 'force'),
     dryRun: false,

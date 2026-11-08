@@ -12,7 +12,11 @@ function inventoryFile(ctx, surface) {
     if (ctx.flags.isMcpConfig) {
         try {
             const config = JSON.parse(ctx.content);
-            const servers = Object.keys(config.mcpServers ?? {});
+            const key = /(?:^|\/)opencode\.json$/i.test(file) ? 'mcp'
+                : /(?:^|\/)\.vscode\/mcp\.json$/i.test(file) ? 'servers'
+                    : /(?:^|\/)\.zed\/settings\.json$/i.test(file) ? 'context_servers' : 'mcpServers';
+            const map = config[key];
+            const servers = map && typeof map === 'object' && !Array.isArray(map) ? Object.keys(map) : [];
             if (servers.length)
                 for (const name of servers)
                     surface.agentFiles.push({ file, kind: 'mcp', name });

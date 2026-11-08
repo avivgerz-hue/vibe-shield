@@ -24,12 +24,16 @@ export interface ScaffoldFile {
     marker?: string;
     /** Human description shown in the init summary. */
     description: string;
+    /** Name of the MCP server map in JSON config files. */
+    mergeKey?: 'mcpServers' | 'mcp' | 'servers' | 'context_servers';
 }
+export declare const AGENT_NAMES: readonly ["claude", "opencode", "codex", "generic", "cursor", "windsurf", "copilot", "cline", "roo", "zed"];
+export type AgentName = (typeof AGENT_NAMES)[number];
 export interface InitOptions {
     /** Repository root (absolute). */
     rootDir: string;
     /** Which agent integration to install. */
-    agents?: 'claude' | 'cursor' | 'generic' | 'all';
+    agents?: AgentName | 'all' | readonly AgentName[];
     /** Write the GitHub Actions workflow. Default true. */
     workflow?: boolean;
     /** Overwrite existing files. Default false. */
@@ -114,6 +118,15 @@ export declare const WORKFLOW_TEMPLATE = "name: vibe-shield\n\non:\n  push:\n   
 export declare const IGNORE_TEMPLATE = "# .vibe-shieldignore \u2014 gitignore syntax.\n#\n# Keep this file as short as possible: every line hides real code from the\n# security gate. Prefer an inline suppression with a reason where it applies:\n#\n#   // vibe-shield-disable-next-line VSB-AI-001 -- path comes from a fixed enum\n#\n# Generated code, vendored third-party sources and build output are the only\n# good reasons to ignore a path wholesale.\n\n# Generated / vendored\n# vendor/**\n# **/*.generated.ts\n# **/__generated__/**\n\n# Local-only scratch work\n# scratch/**\n";
 /** Build the full set of files for a given target repository. */
 export declare function buildScaffold(options: InitOptions): ScaffoldFile[];
+/** Merge one owned server without replacing other entries or malformed files. */
+export declare function mergeAgentConfig(existing: string | null, key: NonNullable<ScaffoldFile['mergeKey']>, options?: {
+    force?: boolean;
+    version?: string | null;
+}): {
+    contents: string;
+    changed: boolean;
+    error?: string;
+};
 /** Write the scaffold into `options.rootDir`. Idempotent unless `force`. */
 export declare function installScaffold(options: InitOptions): Promise<InitResult>;
 /** Locate the shipped `SKILL.md` (used by `init` to copy the canonical file). */

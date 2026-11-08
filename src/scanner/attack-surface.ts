@@ -8,8 +8,12 @@ export function inventoryFile(ctx: FileContext, surface: AttackSurface): void {
   const { relativePath: file, code } = ctx;
   if (ctx.flags.isMcpConfig) {
     try {
-      const config = JSON.parse(ctx.content) as { mcpServers?: Record<string, unknown> };
-      const servers = Object.keys(config.mcpServers ?? {});
+      const config = JSON.parse(ctx.content) as Record<string, unknown>;
+      const key = /(?:^|\/)opencode\.json$/i.test(file) ? 'mcp'
+        : /(?:^|\/)\.vscode\/mcp\.json$/i.test(file) ? 'servers'
+          : /(?:^|\/)\.zed\/settings\.json$/i.test(file) ? 'context_servers' : 'mcpServers';
+      const map = config[key];
+      const servers = map && typeof map === 'object' && !Array.isArray(map) ? Object.keys(map) : [];
       if (servers.length) for (const name of servers) surface.agentFiles.push({ file, kind: 'mcp', name });
       else surface.agentFiles.push({ file, kind: 'mcp' });
     } catch { surface.agentFiles.push({ file, kind: 'mcp' }); }

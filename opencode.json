@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "vibe-shield": {
+      "type": "local",
+      "command": ["npx", "--yes", "@vibefoundry/vibe-shield@2.0.0", "mcp"],
+      "enabled": true
+    }
+  }
+}

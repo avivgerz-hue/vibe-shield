@@ -114,7 +114,8 @@ SCAN OPTIONS
 
 INIT OPTIONS
   --target <dir>         Repository to install into.          (cwd)
-  --agent <kind>         claude | cursor | generic | all.      (all)
+  --agents <list|all>    Comma-separated agent names, or all.  (all)
+  --agent <kind>         Legacy single-agent option.
   --no-workflow          Skip the GitHub Actions workflow.
   --force                Overwrite existing files.
   --yes                  Accepted for non-interactive CI use (init never prompts).
@@ -162,6 +163,7 @@ const VALUE_FLAGS = new Set([
     'max-findings',
     'target',
     'agent',
+    'agents',
     'category',
 ]);
 const SHORT_FLAGS = {
@@ -383,14 +385,19 @@ async function commandAuditSkills(parsed, io) {
 }
 async function commandInit(parsed, io) {
     const target = path.resolve(io.cwd, flagString(parsed, 'target') ?? '.');
-    const agent = (flagString(parsed, 'agent') ?? 'all').toLowerCase();
-    if (!['claude', 'cursor', 'generic', 'all'].includes(agent)) {
-        write(io, 'stderr', 'vibe-shield: --agent expects claude, cursor, generic or all\n');
+    if (flagString(parsed, 'agents') && flagString(parsed, 'agent')) {
+        write(io, 'stderr', 'vibe-shield: use --agent or --agents, not both\n');
+        return exports.EXIT_USAGE;
+    }
+    const agent = (flagString(parsed, 'agents') ?? flagString(parsed, 'agent') ?? 'all').toLowerCase();
+    const requested = agent.split(',').map(value => value.trim());
+    if (!requested.length || requested.some(value => !scaffold_1.AGENT_NAMES.includes(value) && value !== 'all') || (requested.includes('all') && requested.length > 1)) {
+        write(io, 'stderr', `vibe-shield: --agents expects all or a comma-separated list of: ${scaffold_1.AGENT_NAMES.join(', ')}\n`);
         return exports.EXIT_USAGE;
     }
     const result = await (0, scaffold_1.installScaffold)({
         rootDir: target,
-        agents: agent,
+        agents: agent === 'all' ? 'all' : requested,
         workflow: !flagBool(parsed, 'no-workflow'),
         force: flagBool(parsed, 'force'),
         dryRun: false,

@@ -28,13 +28,18 @@ export interface ScaffoldFile {
   marker?: string;
   /** Human description shown in the init summary. */
   description: string;
+  /** Name of the MCP server map in JSON config files. */
+  mergeKey?: 'mcpServers' | 'mcp' | 'servers' | 'context_servers';
 }
+
+export const AGENT_NAMES = ['claude', 'opencode', 'codex', 'generic', 'cursor', 'windsurf', 'copilot', 'cline', 'roo', 'zed'] as const;
+export type AgentName = (typeof AGENT_NAMES)[number];
 
 export interface InitOptions {
   /** Repository root (absolute). */
   rootDir: string;
   /** Which agent integration to install. */
-  agents?: 'claude' | 'cursor' | 'generic' | 'all';
+  agents?: AgentName | 'all' | readonly AgentName[];
   /** Write the GitHub Actions workflow. Default true. */
   workflow?: boolean;
   /** Overwrite existing files. Default false. */
@@ -356,56 +361,62 @@ reports an exposed credential, tell the user to rotate it at the provider.
 
 /** Build the full set of files for a given target repository. */
 export function buildScaffold(options: InitOptions): ScaffoldFile[] {
-  const agents = options.agents ?? 'all';
+  const selection = options.agents ?? 'all';
+  const agents: readonly AgentName[] = selection === 'all' ? AGENT_NAMES : typeof selection === 'string' ? [selection] : selection;
+  const selected = (name: AgentName): boolean => agents.includes(name);
   const files: ScaffoldFile[] = [];
-
-  if (agents === 'claude' || agents === 'all') {
-    files.push({
-      relativePath: '.claude/skills/vibe-shield/SKILL.md',
-      contents: SKILL_TEMPLATE,
-      mode: 'write',
-      description: 'Agent Skill — forces Claude Code to audit before finishing',
-    });
+  const add = (relativePath: string, contents: string, mode: ScaffoldFile['mode'], description: string, mergeKey?: ScaffoldFile['mergeKey']): void => {
+    if (!files.some(file => file.relativePath === relativePath)) files.push({ relativePath, contents, mode, description, mergeKey, ...(mode === 'append' ? { marker: '## Security gate (vibe-shield)' } : {}) });
+  };
+  // Kept for compatibility with the original --agent interface.
+  add('.mcp.json', '', 'merge', 'Shared Claude MCP server', 'mcpServers');
+  if (selected('claude')) {
+    add('.claude/skills/vibe-shield/SKILL.md', SKILL_TEMPLATE, 'write', 'Claude Code skill');
+    add('CLAUDE.md', AGENTS_SECTION, 'append', 'Claude Code instructions');
+    add('.claude-plugin/plugin.json', JSON.stringify({ name: 'vibe-shield', description: 'Defensive static security audit skill and MCP server', version: packageVersionFromDisk() ?? '2.0.0', author: { name: 'VibeFoundry' }, skills: './.claude/skills/' }, null, 2) + '\n', 'write', 'Claude Code plugin manifest');
   }
-  if (agents === 'cursor' || agents === 'all') {
-    files.push({
-      relativePath: '.cursor/rules/vibe-shield.mdc',
-      contents: CURSOR_RULE,
-      mode: 'write',
-      description: 'Cursor rule — same gate for Cursor/Windsurf',
-    });
+  if (selected('opencode')) add('opencode.json', '', 'merge', 'OpenCode MCP configuration', 'mcp');
+  if (selected('opencode') || selected('codex') || selected('generic')) add('AGENTS.md', AGENTS_SECTION, 'append', 'Universal agent instructions');
+  if (selected('codex') || selected('generic')) add('.agents/skills/vibe-shield/SKILL.md', SKILL_TEMPLATE, 'write', 'Universal agent skill');
+  if (selected('cursor')) {
+    add('.cursor/mcp.json', '', 'merge', 'Cursor MCP configuration', 'mcpServers');
+    add('.cursor/rules/vibe-shield.mdc', CURSOR_RULE, 'write', 'Cursor security rule');
   }
-  if (agents === 'generic' || agents === 'all') {
-    files.push({
-      relativePath: 'AGENTS.md',
-      contents: AGENTS_SECTION,
-      mode: 'append',
-      marker: '## Security gate (vibe-shield)',
-      description: 'AGENTS.md section — Codex, Cursor, Windsurf, Amp',
-    });
+  if (selected('windsurf')) add('.windsurfrules', AGENTS_SECTION, 'append', 'Windsurf instructions');
+  if (selected('copilot')) {
+    add('.vscode/mcp.json', '', 'merge', 'VS Code MCP configuration', 'servers');
+    add('.github/copilot-instructions.md', AGENTS_SECTION, 'append', 'Copilot instructions');
   }
-  if (options.workflow !== false) {
-    files.push({
-      relativePath: '.github/workflows/vibe-shield.yml',
-      contents: WORKFLOW_TEMPLATE,
-      mode: 'write',
-      description: 'GitHub Actions — fails the PR on new high/critical findings',
-    });
-  }
-  files.push({
-    relativePath: '.mcp.json',
-    contents: '', // produced by mergeMcpConfig so existing servers survive
-    mode: 'merge',
-    description: 'MCP server config — lets Claude Code/Desktop, Cursor and Codex call the scanner',
-  });
-  files.push({
-    relativePath: '.vibe-shieldignore',
-    contents: IGNORE_TEMPLATE,
-    mode: 'write',
-    description: 'Ignore file — documented escape hatch',
-  });
-
+  if (selected('cline') || selected('roo')) add('.clinerules', AGENTS_SECTION, 'append', 'Cline and Roo instructions');
+  if (selected('zed')) add('.zed/settings.json', '', 'merge', 'Zed context server', 'context_servers');
+  if (options.workflow !== false) add('.github/workflows/vibe-shield.yml', WORKFLOW_TEMPLATE, 'write', 'GitHub Actions security gate');
+  add('.vibe-shieldignore', IGNORE_TEMPLATE, 'write', 'Documented ignore file');
   return files;
+}
+
+/** Merge one owned server without replacing other entries or malformed files. */
+export function mergeAgentConfig(existing: string | null, key: NonNullable<ScaffoldFile['mergeKey']>, options: { force?: boolean; version?: string | null } = {}): { contents: string; changed: boolean; error?: string } {
+  if (key === 'mcpServers') return mergeMcpConfig(existing, options);
+  let config: Record<string, unknown> = {};
+  if (existing !== null && existing.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(existing);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { contents: existing, changed: false, error: 'Configuration is not a JSON object; left untouched.' };
+      config = parsed as Record<string, unknown>;
+    } catch {
+      return { contents: existing, changed: false, error: 'Configuration is not valid JSON (including JSON with comments); left untouched.' };
+    }
+  }
+  const current = config[key];
+  if (current !== undefined && (!current || typeof current !== 'object' || Array.isArray(current))) return { contents: existing ?? '', changed: false, error: `${key} is not an object; left untouched.` };
+  const servers = (current ?? {}) as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(servers, MCP_SERVER_KEY) && !options.force) return { contents: existing ?? '', changed: false };
+  const base = mcpServerEntry(options.version ?? packageVersionFromDisk());
+  const entry = key === 'mcp' ? { type: 'local', command: [base.command, ...base.args], enabled: true }
+    : key === 'servers' ? { type: 'stdio', ...base }
+      : base;
+  const next = { ...config, [key]: { ...servers, [MCP_SERVER_KEY]: entry } };
+  return { contents: `${JSON.stringify(next, null, 2)}\n`, changed: true };
 }
 
 const exists = async (file: string): Promise<boolean> => {
@@ -458,14 +469,16 @@ export async function installScaffold(options: InitOptions): Promise<InitResult>
         try {
           existing = await fs.readFile(absolute, 'utf8');
         } catch {
-          existing = null;
+          result.blocked.push(file.relativePath);
+          result.warnings.push(`${file.relativePath}: could not read existing configuration; left untouched.`);
+          continue;
         }
       }
-      const merged = mergeMcpConfig(existing, { force: options.force, version: resolvedVersion });
+      const merged = mergeAgentConfig(existing, file.mergeKey ?? 'mcpServers', { force: options.force, version: resolvedVersion });
       if (merged.error) {
         // Not a `skipped` entry: `--force` cannot repair invalid JSON, so the
         // summary must not suggest it can.
-        result.warnings.push(merged.error);
+        result.warnings.push(`${file.relativePath}: ${merged.error}`);
         result.blocked.push(file.relativePath);
         continue;
       }

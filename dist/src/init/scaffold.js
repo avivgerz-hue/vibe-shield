@@ -48,15 +48,17 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.IGNORE_TEMPLATE = exports.WORKFLOW_TEMPLATE = exports.MCP_SERVER_ENTRY = exports.MCP_SERVER_SPEC = exports.MCP_SERVER_KEY = exports.AGENTS_SECTION = exports.SKILL_TEMPLATE = void 0;
+exports.IGNORE_TEMPLATE = exports.WORKFLOW_TEMPLATE = exports.MCP_SERVER_ENTRY = exports.MCP_SERVER_SPEC = exports.MCP_SERVER_KEY = exports.AGENTS_SECTION = exports.SKILL_TEMPLATE = exports.AGENT_NAMES = void 0;
 exports.mcpServerEntry = mcpServerEntry;
 exports.packageVersionFromDisk = packageVersionFromDisk;
 exports.mergeMcpConfig = mergeMcpConfig;
 exports.buildScaffold = buildScaffold;
+exports.mergeAgentConfig = mergeAgentConfig;
 exports.installScaffold = installScaffold;
 exports.locateBundledSkill = locateBundledSkill;
 const node_fs_1 = require("node:fs");
 const path = __importStar(require("node:path"));
+exports.AGENT_NAMES = ['claude', 'opencode', 'codex', 'generic', 'cursor', 'windsurf', 'copilot', 'cline', 'roo', 'zed'];
 const shared_1 = require("../scanner/rules/shared");
 const BANNER = '<!-- Managed by vibe-shield. Edit freely; `npx -y @vibefoundry/vibe-shield init --force` regenerates this file. -->';
 /* -------------------------------------------------------------------------- */
@@ -328,54 +330,74 @@ reports an exposed credential, tell the user to rotate it at the provider.
 `;
 /** Build the full set of files for a given target repository. */
 function buildScaffold(options) {
-    const agents = options.agents ?? 'all';
+    const selection = options.agents ?? 'all';
+    const agents = selection === 'all' ? exports.AGENT_NAMES : typeof selection === 'string' ? [selection] : selection;
+    const selected = (name) => agents.includes(name);
     const files = [];
-    if (agents === 'claude' || agents === 'all') {
-        files.push({
-            relativePath: '.claude/skills/vibe-shield/SKILL.md',
-            contents: exports.SKILL_TEMPLATE,
-            mode: 'write',
-            description: 'Agent Skill — forces Claude Code to audit before finishing',
-        });
+    const add = (relativePath, contents, mode, description, mergeKey) => {
+        if (!files.some(file => file.relativePath === relativePath))
+            files.push({ relativePath, contents, mode, description, mergeKey, ...(mode === 'append' ? { marker: '## Security gate (vibe-shield)' } : {}) });
+    };
+    // Kept for compatibility with the original --agent interface.
+    add('.mcp.json', '', 'merge', 'Shared Claude MCP server', 'mcpServers');
+    if (selected('claude')) {
+        add('.claude/skills/vibe-shield/SKILL.md', exports.SKILL_TEMPLATE, 'write', 'Claude Code skill');
+        add('CLAUDE.md', exports.AGENTS_SECTION, 'append', 'Claude Code instructions');
+        add('.claude-plugin/plugin.json', JSON.stringify({ name: 'vibe-shield', description: 'Defensive static security audit skill and MCP server', version: packageVersionFromDisk() ?? '2.0.0', author: { name: 'VibeFoundry' }, skills: './.claude/skills/' }, null, 2) + '\n', 'write', 'Claude Code plugin manifest');
     }
-    if (agents === 'cursor' || agents === 'all') {
-        files.push({
-            relativePath: '.cursor/rules/vibe-shield.mdc',
-            contents: CURSOR_RULE,
-            mode: 'write',
-            description: 'Cursor rule — same gate for Cursor/Windsurf',
-        });
+    if (selected('opencode'))
+        add('opencode.json', '', 'merge', 'OpenCode MCP configuration', 'mcp');
+    if (selected('opencode') || selected('codex') || selected('generic'))
+        add('AGENTS.md', exports.AGENTS_SECTION, 'append', 'Universal agent instructions');
+    if (selected('codex') || selected('generic'))
+        add('.agents/skills/vibe-shield/SKILL.md', exports.SKILL_TEMPLATE, 'write', 'Universal agent skill');
+    if (selected('cursor')) {
+        add('.cursor/mcp.json', '', 'merge', 'Cursor MCP configuration', 'mcpServers');
+        add('.cursor/rules/vibe-shield.mdc', CURSOR_RULE, 'write', 'Cursor security rule');
     }
-    if (agents === 'generic' || agents === 'all') {
-        files.push({
-            relativePath: 'AGENTS.md',
-            contents: exports.AGENTS_SECTION,
-            mode: 'append',
-            marker: '## Security gate (vibe-shield)',
-            description: 'AGENTS.md section — Codex, Cursor, Windsurf, Amp',
-        });
+    if (selected('windsurf'))
+        add('.windsurfrules', exports.AGENTS_SECTION, 'append', 'Windsurf instructions');
+    if (selected('copilot')) {
+        add('.vscode/mcp.json', '', 'merge', 'VS Code MCP configuration', 'servers');
+        add('.github/copilot-instructions.md', exports.AGENTS_SECTION, 'append', 'Copilot instructions');
     }
-    if (options.workflow !== false) {
-        files.push({
-            relativePath: '.github/workflows/vibe-shield.yml',
-            contents: exports.WORKFLOW_TEMPLATE,
-            mode: 'write',
-            description: 'GitHub Actions — fails the PR on new high/critical findings',
-        });
-    }
-    files.push({
-        relativePath: '.mcp.json',
-        contents: '', // produced by mergeMcpConfig so existing servers survive
-        mode: 'merge',
-        description: 'MCP server config — lets Claude Code/Desktop, Cursor and Codex call the scanner',
-    });
-    files.push({
-        relativePath: '.vibe-shieldignore',
-        contents: exports.IGNORE_TEMPLATE,
-        mode: 'write',
-        description: 'Ignore file — documented escape hatch',
-    });
+    if (selected('cline') || selected('roo'))
+        add('.clinerules', exports.AGENTS_SECTION, 'append', 'Cline and Roo instructions');
+    if (selected('zed'))
+        add('.zed/settings.json', '', 'merge', 'Zed context server', 'context_servers');
+    if (options.workflow !== false)
+        add('.github/workflows/vibe-shield.yml', exports.WORKFLOW_TEMPLATE, 'write', 'GitHub Actions security gate');
+    add('.vibe-shieldignore', exports.IGNORE_TEMPLATE, 'write', 'Documented ignore file');
     return files;
+}
+/** Merge one owned server without replacing other entries or malformed files. */
+function mergeAgentConfig(existing, key, options = {}) {
+    if (key === 'mcpServers')
+        return mergeMcpConfig(existing, options);
+    let config = {};
+    if (existing !== null && existing.trim()) {
+        try {
+            const parsed = JSON.parse(existing);
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+                return { contents: existing, changed: false, error: 'Configuration is not a JSON object; left untouched.' };
+            config = parsed;
+        }
+        catch {
+            return { contents: existing, changed: false, error: 'Configuration is not valid JSON (including JSON with comments); left untouched.' };
+        }
+    }
+    const current = config[key];
+    if (current !== undefined && (!current || typeof current !== 'object' || Array.isArray(current)))
+        return { contents: existing ?? '', changed: false, error: `${key} is not an object; left untouched.` };
+    const servers = (current ?? {});
+    if (Object.prototype.hasOwnProperty.call(servers, exports.MCP_SERVER_KEY) && !options.force)
+        return { contents: existing ?? '', changed: false };
+    const base = mcpServerEntry(options.version ?? packageVersionFromDisk());
+    const entry = key === 'mcp' ? { type: 'local', command: [base.command, ...base.args], enabled: true }
+        : key === 'servers' ? { type: 'stdio', ...base }
+            : base;
+    const next = { ...config, [key]: { ...servers, [exports.MCP_SERVER_KEY]: entry } };
+    return { contents: `${JSON.stringify(next, null, 2)}\n`, changed: true };
 }
 const exists = async (file) => {
     try {
@@ -426,14 +448,16 @@ async function installScaffold(options) {
                     existing = await node_fs_1.promises.readFile(absolute, 'utf8');
                 }
                 catch {
-                    existing = null;
+                    result.blocked.push(file.relativePath);
+                    result.warnings.push(`${file.relativePath}: could not read existing configuration; left untouched.`);
+                    continue;
                 }
             }
-            const merged = mergeMcpConfig(existing, { force: options.force, version: resolvedVersion });
+            const merged = mergeAgentConfig(existing, file.mergeKey ?? 'mcpServers', { force: options.force, version: resolvedVersion });
             if (merged.error) {
                 // Not a `skipped` entry: `--force` cannot repair invalid JSON, so the
                 // summary must not suggest it can.
-                result.warnings.push(merged.error);
+                result.warnings.push(`${file.relativePath}: ${merged.error}`);
                 result.blocked.push(file.relativePath);
                 continue;
             }

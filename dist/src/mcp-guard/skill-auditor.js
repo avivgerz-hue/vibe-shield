@@ -389,6 +389,18 @@ const credentialReadInstruction = (0, helpers_1.defineRule)({
         return hits;
     },
 });
+/** Recognize the MCP server maps used by each supported editor. */
+function agentServers(ctx) {
+    const data = (0, context_1.tolerantJsonParse)(ctx.content);
+    if (!data || typeof data !== 'object' || Array.isArray(data))
+        return {};
+    const root = data;
+    const key = /(?:^|\/)opencode\.json$/i.test(ctx.relativePath) ? 'mcp'
+        : /(?:^|\/)\.vscode\/mcp\.json$/i.test(ctx.relativePath) ? 'servers'
+            : /(?:^|\/)\.zed\/settings\.json$/i.test(ctx.relativePath) ? 'context_servers' : 'mcpServers';
+    const servers = root[key];
+    return servers && typeof servers === 'object' && !Array.isArray(servers) ? servers : {};
+}
 /** VSB-AGENT-004 - unpinned / remote MCP server. */
 const unpinnedMcpServer = (0, helpers_1.defineRule)({
     id: 'VSB-AGENT-004',
@@ -413,16 +425,14 @@ const unpinnedMcpServer = (0, helpers_1.defineRule)({
     ],
     appliesTo: (ctx) => ctx.flags.isMcpConfig || /mcp[^/]*\.json$/i.test(ctx.fileName),
     detect(ctx) {
-        const parsed = (0, context_1.tolerantJsonParse)(ctx.content);
-        if (!parsed || typeof parsed !== 'object' || !parsed.mcpServers)
-            return [];
         const hits = [];
-        for (const [name, rawConfig] of Object.entries(parsed.mcpServers)) {
+        for (const [name, rawConfig] of Object.entries(agentServers(ctx))) {
             if (!rawConfig || typeof rawConfig !== 'object')
                 continue;
             const config = rawConfig;
-            const args = Array.isArray(config.args) ? config.args.map(String) : [];
-            const command = String(config.command ?? '');
+            const argv = Array.isArray(config.command) ? config.command.map(String) : [];
+            const args = argv.length ? argv.slice(1) : Array.isArray(config.args) ? config.args.map(String) : [];
+            const command = argv.length ? argv[0] : String(config.command ?? '');
             const joined = [command, ...args].join(' ');
             const offset = ctx.content.indexOf(`"${name}"`);
             const line = ctx.locate(offset === -1 ? 0 : offset).line;
@@ -435,7 +445,7 @@ const unpinnedMcpServer = (0, helpers_1.defineRule)({
                 }));
                 continue;
             }
-            const pinnedNpx = /\bnpx\b/.test(joined) && args.some((arg) => /@\d+\.\d+\.\d+|@\^?\d|@latest|@next/.test(arg));
+            const pinnedNpx = /\bnpx\b/.test(joined) && args.some((arg) => /^[^\s]+@\d+\.\d+\.\d+(?:-[0-9a-z.-]+)?(?:\+[0-9a-z.-]+)?$/i.test(arg));
             // A `github:owner/repo` spec installs from a git host and resolves to a
             // commit SHA rather than a mutable registry tag. That is a materially
             // different risk from `npx -y some-server` (which runs whatever the
@@ -484,10 +494,12 @@ const mcpEnvSecrets = (0, helpers_1.defineRule)({
     appliesTo: (ctx) => ctx.flags.isMcpConfig || /mcp[^/]*\.json$/i.test(ctx.fileName),
     detect(ctx) {
         const hits = [];
-        const parsed = (0, context_1.tolerantJsonParse)(ctx.content);
-        if (parsed && typeof parsed === 'object' && parsed.mcpServers) {
-            for (const [name, config] of Object.entries(parsed.mcpServers)) {
-                const env = config?.env;
+        {
+            for (const [name, raw] of Object.entries(agentServers(ctx))) {
+                if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+                    continue;
+                const config = raw;
+                const env = config.env ?? config.environment;
                 if (!env || typeof env !== 'object')
                     continue;
                 for (const [key, rawValue] of Object.entries(env)) {
@@ -898,9 +910,9 @@ const AUDITOR_SKIP_DIRS = new Set([
     'target',
 ]);
 /** Directories that are *the* agent surface: never prune these. */
-const AGENT_DIRS = new Set(['.claude', '.cursor', '.windsurf', '.cline', '.continue']);
+const AGENT_DIRS = new Set(['.claude', '.claude-plugin', '.agents', '.cursor', '.windsurf', '.cline', '.continue', '.vscode', '.zed', '.github']);
 /** File names/suffixes the auditor visits. */
-const AUDITOR_FILE_REGEX = /(?:^|\/)(?:AGENTS?|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules)$|\.mdc$|(?:^|\/)(?:\.?mcp|mcp_settings|claude_desktop_config)\.json$|(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/.*\.(?:md|mdc|json|ya?ml|txt|sh|bash|zsh|ps1|[cm]?[jt]s)$/i;
+const AUDITOR_FILE_REGEX = /(?:^|\/)opencode\.json$|(?:^|\/)\.github\/copilot-instructions\.md$|(?:^|\/)\.zed\/settings\.json$|(?:^|\/)\.claude-plugin\/plugin\.json$|(?:^|\/)(?:AGENTS?|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules)$|\.mdc$|(?:^|\/)(?:\.?mcp|mcp_settings|claude_desktop_config)\.json$|(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/.*\.(?:md|mdc|json|ya?ml|txt|sh|bash|zsh|ps1|[cm]?[jt]s)$/i;
 /**
  * Locate every agent-instruction / MCP file under `rootDir`.
  * `.gitignore` and `.vibe-shieldignore` are honoured so the auditor reports on

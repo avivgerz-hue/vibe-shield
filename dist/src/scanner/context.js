@@ -76,7 +76,7 @@ const INSTRUCTION_FILE_NAMES = new Set([
     '.clinerules',
     '.roorules',
 ]);
-const MCP_CONFIG_NAMES = /^(?:\.mcp|mcp|mcp-config|mcp_settings|mcp\.settings|claude_desktop_config|settings)\.json$/i;
+const MCP_CONFIG_NAMES = /^(?:\.mcp|mcp|mcp-config|mcp_settings|mcp\.settings|claude_desktop_config|settings|opencode)\.json$/i;
 const CI_WORKFLOW_REGEX = /(?:^|\/)\.github\/workflows\/[^/]+\.ya?ml$|(?:^|\/)\.gitlab-ci\.yml$|(?:^|\/)\.circleci\/config\.yml$|(?:^|\/)azure-pipelines\.yml$|(?:^|\/)\.travis\.yml$|(?:^|\/)Jenkinsfile$/i;
 const TEST_PATH_REGEX = /(?:^|\/)(?:__tests__|__mocks__|tests?|specs?|e2e|cypress|playwright|fixtures?|stories|test-utils|testing)(?:\/|$)|\.(?:test|spec|stories|it)\.[cm]?[jt]sx?$|_test\.go$|_spec\.rb$|(?:^|\/)conftest\.py$|(?:^|\/)test_[^/]+\.py$/i;
 const MIGRATION_PATH_REGEX = /(?:^|\/)(?:supabase\/migrations|migrations?|db\/migrations|prisma\/migrations|drizzle\/?|alembic\/versions|sequelize|mikro-orm-migrations)(?:\/|$)/i;
@@ -156,7 +156,7 @@ function computeFlags(relativePath, fileName, extension, language, content) {
         isLockfile: LOCKFILE_REGEX.test(relativePath),
         isGenerated: GENERATED_REGEX.test(relativePath),
         isAgentInstructionFile: INSTRUCTION_FILE_NAMES.has(lowerName) ||
-            /(?:^|\/)\.(?:claude|cursor|windsurf|cline|roo|codex|aider|continue|github)\/[^/]*\.(?:md|mdc|json|ya?ml|txt)$/i.test(relativePath) ||
+            /(?:^|\/)\.(?:claude|claude-plugin|cursor|windsurf|cline|roo|codex|agents|zed|vscode|aider|continue|github)\/[^/]*\.(?:md|mdc|json|ya?ml|txt)$/i.test(relativePath) ||
             /(?:^|\/)SKILL\.md$/i.test(relativePath),
         isMcpConfig: MCP_CONFIG_NAMES.test(fileName) || /"mcpServers"\s*:/.test(content),
         isCiWorkflow: CI_WORKFLOW_REGEX.test(relativePath),

@@ -43,7 +43,7 @@ npx -y @vibefoundry/vibe-shield audit-skills --report agent-report.html
 
 Reports include severity, CWE, locations, snippets, OWASP 2025 web mappings for every rule and contextual LLM mappings when applicable, and illustrative remediation. Examples are **not** automatic project-specific patches; validate them against the application. The scanner itself is offline and read-only by default; `--cache`, `--out`, `--report`, `--patch-prompt` and `init` explicitly write files. Installing with `npx` can require network access. An A+ score applies only to the rules and files examined and is not a security certification.
 
-> The source tree targets v2.0.0; the npm commands acquire the published version, which may lag this branch until a release is published. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
+> npm `2.0.0` is already published and cannot be overwritten. It provides the scanner and MCP server but predates the universal `--agents` initializer in this repository. Use the GitHub `v2` ref for that setup until a newer npm version is published. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
 
 ---
 
@@ -102,14 +102,14 @@ That file contains, for every finding: the severity, the CWE id and link, the ex
 ## ⚡ Quick start
 
 ```bash
-# 1. Scan (no install, no config, no network calls)
+# 1. Scan (npx may download the package; the scanner itself is offline)
 npx -y @vibefoundry/vibe-shield scan
 
 # 2. Give your agent the fix list
 npx -y @vibefoundry/vibe-shield scan --fix-prompt
 
 # 3. Install the gate permanently — skill + CI + ignore file
-npx -y @vibefoundry/vibe-shield init
+npx -y github:avivgerz-hue/vibe-shield#v2 init --agents all
 ```
 
 > **Use the scoped name.** vibe-shield is published as
@@ -119,18 +119,55 @@ npx -y @vibefoundry/vibe-shield init
 > scope. The package ships a prebuilt `dist/`, needs **no TypeScript**, and
 > starts in milliseconds.
 
-`npx -y @vibefoundry/vibe-shield init` writes:
+## Supported Coding Agents (1-Command Setup)
 
-| File | What it does |
-| --- | --- |
-| `.claude/skills/vibe-shield/SKILL.md` | Agent Skill: forces Claude Code (and any SKILL.md-aware agent) to audit before finishing |
-| `AGENTS.md` *(section)* | Same contract for Codex, Cursor, Windsurf, Amp, and anything that reads a repo instruction file |
-| `.cursor/rules/vibe-shield.mdc` | `alwaysApply` Cursor rule |
-| `.mcp.json` | MCP server entry (merged — your existing servers are preserved) |
-| `.github/workflows/vibe-shield.yml` | Fails the pull request on new high/critical findings, uploads SARIF to code scanning |
-| `.vibe-shieldignore` | The documented escape hatch (empty by default, with guidance) |
+Run this from the repository you want to protect (Node.js and Git required):
 
-Nothing is overwritten without `--force`, and re-running is a no-op.
+```bash
+npx -y github:avivgerz-hue/vibe-shield#v2 init --agents all
+```
+
+To configure selected agents, substitute a comma-separated list such as `--agents claude,cursor,zed`:
+
+| Agent | Selector | Native integration |
+| --- | --- | --- |
+| Claude Code | `claude` | `.mcp.json`, `CLAUDE.md`, `.claude/skills/vibe-shield/SKILL.md`, `.claude-plugin/plugin.json` |
+| OpenCode | `opencode` | `opencode.json` MCP and `AGENTS.md` |
+| OpenAI Codex CLI / universal agents | `codex` | `AGENTS.md` and `.agents/skills/vibe-shield/SKILL.md` |
+| Cursor | `cursor` | `.cursor/mcp.json` and `.cursor/rules/vibe-shield.mdc` |
+| Windsurf | `windsurf` | `.windsurfrules` |
+| VS Code / GitHub Copilot | `copilot` | `.vscode/mcp.json` and `.github/copilot-instructions.md` |
+| Cline / Roo Code | `cline` or `roo` | `.clinerules` |
+| Zed | `zed` | `.zed/settings.json` context server |
+
+The existing `--agent claude|cursor|generic|all` remains supported. The shared `.mcp.json`, ignore file, and (unless `--no-workflow` is set) CI workflow are also installed. JSON configuration is merged by server name; malformed JSON or JSON with comments is left untouched and reported. Existing instructions are appended only once, and existing files are not overwritten without `--force`. Restart the relevant editor or reload its configuration after setup.
+
+### GitHub Marketplace Action
+
+```yaml
+name: Security audit
+on: [push, pull_request]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: avivgerz-hue/vibe-shield@v2
+        with:
+          target: .
+          fail-on: high
+          audit-skills: 'true'
+          sarif-file: vibe-shield.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        if: ${{ always() && hashFiles('vibe-shield.sarif') != '' }}
+        with:
+          sarif_file: vibe-shield.sarif
+```
+
+The action runs the published `@vibefoundry/vibe-shield@2.0.0` scanner, optionally audits skills, and fails if either enabled gate fails. SARIF upload is separate and requires GitHub code scanning support and appropriate permissions. The explicit target `.` includes tests and documentation, so review fixture findings in context.
 
 ---
 
@@ -274,7 +311,7 @@ Three tools:
 {
   "mcpServers": {
     "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"] },
-    "vibe-shield": { "command": "npx", "args": ["--yes", "@vibefoundry/vibe-shield@1.1.1", "mcp"] }
+    "vibe-shield": { "command": "npx", "args": ["--yes", "@vibefoundry/vibe-shield@2.0.0", "mcp"] }
   }
 }
 ```
@@ -301,15 +338,15 @@ a scanner that says "clean" when it read nothing is worse than no scanner.
 
 ## 🤖 Use it as an Agent Skill
 
-`npx -y @vibefoundry/vibe-shield init` installs the skill. Once it is in a repository, every
+`npx -y github:avivgerz-hue/vibe-shield#v2 init --agents all` installs the skill. Once it is in a repository, every
 agent session starts with a contract:
 
 > You are not allowed to say "done" until the code you just wrote passes a security audit.
 
 ```bash
-npx -y @vibefoundry/vibe-shield init                 # Claude Code + Cursor + AGENTS.md + CI
-npx -y @vibefoundry/vibe-shield init --agent claude  # just the skill
-npx -y @vibefoundry/vibe-shield init --no-workflow   # skip the GitHub Action
+npx -y github:avivgerz-hue/vibe-shield#v2 init --agents all
+npx -y github:avivgerz-hue/vibe-shield#v2 init --agents claude
+npx -y github:avivgerz-hue/vibe-shield#v2 init --agents cursor,zed --no-workflow
 ```
 
 **Why this works better than a prompt snippet:** it names the three commands, gives the agent a reading guide for a finding (`line:col`, rule id, message, CWE), states five hard rules (never suppress, never weaken, always rotate, report honestly, re-verify), and defines "done" as an exit code rather than an opinion.
@@ -470,10 +507,10 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 **Design constraints, in priority order:**
 
 1. **Fast.** One `readdir` walk, one read per file, one comment-masking pass, and a cheap gate before any rule body runs. A 400-file project scans in ~200 ms; a typical Next.js app in under 100 ms. No AST, no parser, no dependency.
-2. **Honest.** Every finding carries the exact snippet the developer wrote. Nothing is inferred from a filename alone, and every suppression is counted, not hidden.
+2. **Honest.** Every finding carries the exact snippet the developer wrote. Configuration checks may infer risk from file shape, and every suppression is counted, not hidden.
 3. **Composable.** `scanProject()` for the CLI, `runRulesOnFile()` for the auditor, `scoreFindings()` for anything that produces findings. The whole API is exported from `vibe-shield`.
 
-**Zero runtime dependencies.** No network calls, no telemetry, no language server, no native binaries. `npx -y @vibefoundry/vibe-shield scan` works offline and in an air-gapped CI runner.
+**Zero runtime dependencies.** No network calls, no telemetry, no language server, no native binaries. The scanner works offline once installed; a first-time `npx` install needs registry access.
 
 ---
 
