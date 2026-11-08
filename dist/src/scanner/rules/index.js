@@ -12,6 +12,7 @@ exports.RULES_FINGERPRINT = exports.ALL_RULES = exports.SCAN_RULES = exports.fil
 exports.getRule = getRule;
 exports.rulesByCategory = rulesByCategory;
 exports.selectRules = selectRules;
+const response_hardening_1 = require("./response-hardening");
 const hardening_1 = require("./hardening");
 const ai_vulnerabilities_1 = require("./ai-vulnerabilities");
 const client_exposure_1 = require("./client-exposure");
@@ -46,6 +47,7 @@ exports.SCAN_RULES = [
     ...ai_vulnerabilities_1.AI_VULNERABILITY_RULES,
     ...secret_entropy_1.SECRET_ENTROPY_RULES,
     ...hardening_1.HARDENING_RULES,
+    ...response_hardening_1.RESPONSE_HARDENING_RULES,
     hardening_1.MISSING_LOCKFILE_RULE,
     hardening_1.DOCKER_DEFAULT_ROOT_RULE,
 ];

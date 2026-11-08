@@ -14,7 +14,7 @@ vibe-shield is a **static security scanner built for that failure mode**, plus a
 [![node](https://img.shields.io/badge/node-%E2%89%A518.17.0-5fa04e?style=flat-square&logo=nodedotjs)](#-requirements)
 [![license](https://img.shields.io/github/license/avivgerz-hue/vibe-shield?style=flat-square&color=blue)](./LICENSE)
 [![zero dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen?style=flat-square)](./package.json)
-[![rules](https://img.shields.io/badge/detection%20signatures-85-8b5cf6?style=flat-square)](./src/scanner/rules)
+[![rules](https://img.shields.io/badge/detection%20signatures-91-8b5cf6?style=flat-square)](./src/scanner/rules)
 [![self-scan](https://img.shields.io/badge/self--scan-100%2F100%20A%2B-16a34a?style=flat-square)](#-it-scans-itself)
 
 ```bash
@@ -29,9 +29,9 @@ npx -y @vibefoundry/vibe-shield scan
 
 ## v2.0.0: eight defensive vectors
 
-The v2 catalogue covers client exposure; auth and route protection; database/RLS; AI and web sinks; infrastructure; dependency hygiene; secrets and cryptography; and agent/MCP integrity. The new hardening checks include production source maps, insecure JWT settings, cookie flags, container users, lifecycle scripts, lockfiles and weak cryptography. Run `rules` for the complete catalogue.
+The v2 catalogue covers client exposure; auth and route protection; database/RLS; AI and web sinks; infrastructure; dependency hygiene; secrets and cryptography; and agent/MCP integrity. The new hardening checks include production source maps, insecure JWT settings, explicit and omitted cookie flags, locally absent security headers, container users, lifecycle scripts, lockfiles and weak cryptography. Run `rules` for the complete catalogue.
 
-The scanner produces a heuristic **attack-surface inventory** of route methods, observed guard signals, SQL tables and RLS signals, AI entrypoints, and MCP/agent files. Signals do not prove guards or policies work, and code outside the scanned scope is not assessed. Run `audit-skills` separately for agent-integrity checks.
+The scanner produces a heuristic **attack-surface inventory** of route methods, observed guard signals, SQL tables and RLS signals, AI entrypoints, and MCP/agent files. Header checks cover recognized server configuration files; cookie checks cover common literal setter options. Both are advisory: external middleware, deployment settings and dynamic options require review. Signals do not prove guards or policies work, and code outside the scanned scope is not assessed. Run `audit-skills` separately for agent-integrity checks.
 
 Generate an executive report or agent remediation prompt explicitly:
 
@@ -41,7 +41,7 @@ npx -y @vibefoundry/vibe-shield scan --format html --out security-report.html
 npx -y @vibefoundry/vibe-shield audit-skills --report agent-report.html
 ```
 
-Reports include severity, CWE, locations, snippets, indicative OWASP mappings where available, and illustrative remediation. Examples are **not** automatic project-specific patches; validate them against the application. The scanner itself is offline and read-only by default; `--cache`, `--out`, `--report`, `--patch-prompt` and `init` explicitly write files. Installing with `npx` can require network access. An A+ score applies only to the rules and files examined and is not a security certification.
+Reports include severity, CWE, locations, snippets, OWASP 2025 web mappings for every rule and contextual LLM mappings when applicable, and illustrative remediation. Examples are **not** automatic project-specific patches; validate them against the application. The scanner itself is offline and read-only by default; `--cache`, `--out`, `--report`, `--patch-prompt` and `init` explicitly write files. Installing with `npx` can require network access. An A+ score applies only to the rules and files examined and is not a security certification.
 
 > The source tree targets v2.0.0; the npm commands acquire the published version, which may lag this branch until a release is published. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
 
@@ -81,7 +81,7 @@ app/api/users/route.ts
            await db.query(`DELETE FROM users WHERE id = ${id} AND owner = ${userId}`);
   CRITICAL 4:22     VSB-AUTH-004  Record ownership taken from the request instead of the session (IDOR)
 
-  7 files  ·  1 KiB  ·  412 files/s  ·  17 ms  ·  73 rules
+  7 files  ·  1 KiB  ·  412 files/s  ·  17 ms  ·  79 rules
 
   ⚠  3 critical findings — rotate any exposed credential before anything else.
   Fix it      npx -y @vibefoundry/vibe-shield scan --fix-prompt    # writes SECURITY_PATCH_PROMPT.md for your agent
@@ -146,13 +146,13 @@ Traditional SAST rules are built around human mistakes: a forgotten escape, a mi
 | writes `CREATE TABLE` | writes `CREATE TABLE` **and forgets the `ENABLE ROW LEVEL SECURITY`**, so the anon key reads everything |
 | adds `dangerouslySetInnerHTML` to render a doc | renders **model output** with it, creating stored XSS with a step counter |
 
-vibe-shield encodes those specific shapes: 85 signatures across eight defensive categories, each one derived from a real agent-generated bug rather than a generic CWE checklist.
+vibe-shield encodes those specific shapes: 91 signatures across eight defensive categories, each one derived from a real agent-generated bug rather than a generic CWE checklist.
 
 ---
 
 ## 📊 Vulnerability Coverage Matrix
 
-**73 code signatures + 12 agent-integrity signatures = 85.** Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and a CWE — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
+**79 code signatures + 12 agent-integrity signatures = 91.** Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and an OWASP association — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
 
 ### Client-side secret & data exposure — `VSB-CLIENT-*`
 
@@ -274,7 +274,7 @@ Three tools:
 {
   "mcpServers": {
     "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"] },
-    "vibe-shield": { "command": "npx", "args": ["--yes", "@vibefoundry/vibe-shield@2.0.0", "mcp"] }
+    "vibe-shield": { "command": "npx", "args": ["--yes", "@vibefoundry/vibe-shield@1.1.1", "mcp"] }
   }
 }
 ```
@@ -417,7 +417,7 @@ target  /you/vibe-shield
 
 🏆 GRADE A+ — 100/100
 
-  21 files  ·  172 KiB  ·  236 files/s  ·  89 ms  ·  73 rules
+  21 files  ·  172 KiB  ·  236 files/s  ·  89 ms  ·  79 rules
 
   Nothing to fix. Keep the shield up. 🛡️
 
@@ -461,7 +461,7 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 ```
  discover ──▶ project context ──▶ rule gate ──▶ detect ──▶ suppress ──▶ score ──▶ report
    │              │                  │           │
-   │              │                  │           └─ 85 rules, each a pure (FileContext) => RuleHit[]
+   │              │                  │           └─ 91 rules, each a pure (FileContext) => RuleHit[]
    │              │                  └─ cheap content hints: most rules skip most files
    │              └─ manifests, framework flags, cross-file RLS index, git index, middleware matchers
    └─ one tree walk, gitignore/.vibe-shieldignore layering, binary + size + test/doc pruning

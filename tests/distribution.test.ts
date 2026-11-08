@@ -199,6 +199,13 @@ describe('init writes the mcp config', () => {
   });
 });
 
+describe('repository MCP pin', () => {
+  it('uses the published scoped version until the v2 package is released', () => {
+    const config = readJson<{ mcpServers: { 'vibe-shield': { command: string; args: string[] } } }>('.mcp.json');
+    expect(config.mcpServers['vibe-shield']).toEqual({ command: 'npx', args: ['--yes', '@vibefoundry/vibe-shield@1.1.1', 'mcp'] });
+  });
+});
+
 describe('distribution files exist', () => {
   it('ships every directory manifest at the repository root', () => {
     for (const file of ['server.json', 'smithery.yaml', 'glama.json', 'CITATION.cff', 'LICENSE', 'SECURITY.md']) {

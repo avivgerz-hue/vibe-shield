@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatMarkdown = formatMarkdown;
 exports.formatHtml = formatHtml;
+const mappings_1 = require("../scanner/mappings");
 const engine_1 = require("../scanner/engine");
 const types_1 = require("../scanner/types");
 const clean = (s) => s.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
@@ -9,17 +10,12 @@ const fence = (s) => {
     const marker = '`'.repeat(Math.max(3, ...Array.from(s.matchAll(/`+/g), m => m[0].length + 1)));
     return `${marker}\n${s}\n${marker}`;
 };
-// Indicative CWE associations, not independently verified classifications.
-function mappings(id, category) {
-    const web = {
-        'CWE-284': 'A01:2025 Broken Access Control', 'CWE-639': 'A01:2025 Broken Access Control',
-        'CWE-862': 'A01:2025 Broken Access Control', 'CWE-863': 'A01:2025 Broken Access Control',
-        'CWE-327': 'A04:2025 Cryptographic Failures', 'CWE-89': 'A05:2025 Injection',
-        'CWE-78': 'A05:2025 Injection', 'CWE-79': 'A05:2025 Injection',
-        'CWE-287': 'A07:2025 Authentication Failures', 'CWE-306': 'A07:2025 Authentication Failures',
-    };
-    const llm = id === 'CWE-74' && category === 'ai-vulnerabilities' ? 'LLM01:2025 Prompt Injection' : 'not mapped';
-    return `OWASP Top 10 2025: ${web[id] ?? 'not mapped'}; OWASP LLM Top 10: ${llm}. Indicative classification; verify in context.`;
+// The CWE mapping is based on OWASP's published 2025 category lists.
+function mappings(ruleId, cwe) {
+    const mapping = (0, mappings_1.owaspMappings)(ruleId, cwe);
+    const web = mapping.web ? `${mapping.web.id} ${mapping.web.name} (${mapping.web.basis})` : 'not mapped';
+    const llm = mapping.llm.length ? mapping.llm.map(m => `${m.id} ${m.name} (contextual)`).join(', ') : 'not applicable or not assigned';
+    return `OWASP Top 10 2025: ${web}; OWASP LLM Top 10 2025: ${llm}. Validate applicability in context.`;
 }
 function formatMarkdown(result) {
     const lines = ['# Executive Security Report', '', `**Score: ${result.score.score}/100 (${result.score.grade})** · ${result.stats.filesScanned} files scanned · ${result.command}`, '',
@@ -47,7 +43,7 @@ function formatMarkdown(result) {
     lines.push('', '## Prioritized findings', '');
     const rank = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
     for (const f of [...result.findings].sort((a, b) => (rank[a.severity] ?? 5) - (rank[b.severity] ?? 5))) {
-        lines.push(`### ${clean(f.severity.toUpperCase())}: ${clean(f.title)}`, '', `**${f.ruleId} · ${clean(f.filePath)}:${f.line}:${f.column} · ${f.cwe.id} · confidence ${f.confidence}**`, '', f.message, '', mappings(f.cwe.id, f.category), '', '**Observed code**', '', fence(f.snippet), '', '**Suggested remediation**', '', ...f.remediation.map(x => `- ${x}`), '', '**Illustrative before / after (adapt and validate; not an automatic patch)**', '', fence(f.insecureExample), '', fence(f.secureExample), '');
+        lines.push(`### ${clean(f.severity.toUpperCase())}: ${clean(f.title)}`, '', `**${f.ruleId} · ${clean(f.filePath)}:${f.line}:${f.column} · ${f.cwe.id} · confidence ${f.confidence}**`, '', f.message, '', mappings(f.ruleId, f.cwe.id), '', '**Observed code**', '', fence(f.snippet), '', '**Suggested remediation**', '', ...f.remediation.map(x => `- ${x}`), '', '**Illustrative before / after (adapt and validate; not an automatic patch)**', '', fence(f.insecureExample), '', fence(f.secureExample), '');
     }
     if (!result.findings.length)
         lines.push('No findings reported for the selected rules and files.', '');

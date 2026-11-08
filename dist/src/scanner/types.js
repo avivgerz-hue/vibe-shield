@@ -1,4 +1,6 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isRuleCategory = exports.isSeverity = exports.meetsSeverity = exports.severityRank = exports.emptySeverityCounts = exports.emptyProjectContext = exports.LANGUAGE_EXTENSIONS = exports.GRADE_THRESHOLDS = exports.GRADES = exports.SEVERITY_SCORE_CEILING = exports.SEVERITY_SCORE_PENALTY = exports.SEVERITY_WEIGHT = exports.CATEGORY_TITLES = exports.RULE_CATEGORIES = exports.CONFIDENCES = exports.SEVERITIES = void 0;
 /**
  * vibe-shield :: scanner type system
  * ----------------------------------
@@ -7,8 +9,6 @@
  * `ScanResult` can be cached to disk, emitted as SARIF, or handed to an agent
  * as a patch prompt without any transformation.
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.isRuleCategory = exports.isSeverity = exports.meetsSeverity = exports.severityRank = exports.emptySeverityCounts = exports.emptyProjectContext = exports.LANGUAGE_EXTENSIONS = exports.GRADE_THRESHOLDS = exports.GRADES = exports.SEVERITY_SCORE_CEILING = exports.SEVERITY_SCORE_PENALTY = exports.SEVERITY_WEIGHT = exports.CATEGORY_TITLES = exports.RULE_CATEGORIES = exports.CONFIDENCES = exports.SEVERITIES = void 0;
 /** Ordered list of severities, most severe first. */
 exports.SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'];
 /** Detection confidence reported alongside every finding. */

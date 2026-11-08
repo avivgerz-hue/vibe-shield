@@ -13,6 +13,7 @@ exports.defineRule = defineRule;
 exports.regexHits = regexHits;
 exports.bodyFrom = bodyFrom;
 exports.fileHit = fileHit;
+const mappings_1 = require("../mappings");
 const text_1 = require("../text");
 /** Does this file match the declarative scope of a rule? */
 function inScope(def, ctx) {
@@ -36,6 +37,7 @@ function defineRule(def) {
     const custom = def.appliesTo;
     const rule = {
         ...def,
+        owasp: def.owasp ?? (0, mappings_1.owaspMappings)(def.id, def.cwe.id),
         appliesTo: (ctx) => (custom ? custom(ctx) && inScope(def, ctx) : inScope(def, ctx)),
     };
     return rule;

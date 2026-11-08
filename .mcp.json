@@ -2,7 +2,7 @@
   "mcpServers": {
     "vibe-shield": {
       "command": "npx",
-      "args": ["--yes", "@vibefoundry/vibe-shield@2.0.0", "mcp"]
+      "args": ["--yes", "@vibefoundry/vibe-shield@1.1.1", "mcp"]
     }
   }
 }

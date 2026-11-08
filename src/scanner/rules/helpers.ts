@@ -6,6 +6,7 @@
  * skipped file kinds) so the engine can cheaply decide whether to run it.
  */
 
+import { owaspMappings } from '../mappings';
 import { balancedBlock, nextBrace, trimSnippet } from '../text';
 import type { FileContext, Rule, RuleHit } from '../types';
 
@@ -32,6 +33,7 @@ export function defineRule(def: RuleDefinition): Rule {
   const custom = def.appliesTo;
   const rule: Rule = {
     ...def,
+    owasp: def.owasp ?? owaspMappings(def.id, def.cwe.id),
     appliesTo: (ctx) => (custom ? custom(ctx) && inScope(def, ctx) : inScope(def, ctx)),
   };
   return rule;

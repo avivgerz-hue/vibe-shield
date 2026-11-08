@@ -436,6 +436,7 @@ function commandRules(parsed, io) {
             severity: rule.severity,
             confidence: rule.confidence,
             cwe: rule.cwe.id,
+            owasp: rule.owasp,
             description: rule.description,
             remediation: rule.remediation,
             references: rule.references,
@@ -492,6 +493,10 @@ function commandExplain(parsed, io) {
         out.push(`  ${color.cyan(reference)}`);
     out.push('');
     out.push(color.dim(`CWE: ${rule.cwe.name} — ${rule.cwe.url}`));
+    if (rule.owasp?.web)
+        out.push(color.dim(`OWASP: ${rule.owasp.web.id} ${rule.owasp.web.name} (${rule.owasp.web.basis})`));
+    if (rule.owasp?.llm.length)
+        out.push(color.dim(`OWASP LLM: ${rule.owasp.llm.map(m => `${m.id} ${m.name}`).join(', ')} (contextual)`));
     out.push('');
     write(io, 'stdout', `${out.join('\n')}\n`);
     return exports.EXIT_OK;

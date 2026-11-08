@@ -1,3 +1,4 @@
+import type { OwaspMappings } from './mappings';
 /**
  * vibe-shield :: scanner type system
  * ----------------------------------
@@ -218,6 +219,8 @@ export interface Rule {
     severity: Severity;
     confidence: Confidence;
     cwe: Cwe;
+    /** OWASP associations; LLM mappings apply only where context warrants. */
+    owasp?: OwaspMappings;
     /** Why this matters — one or two sentences, written for the coding agent. */
     description: string;
     /** Code shape that triggers the rule. */
@@ -264,6 +267,7 @@ export interface Finding {
     severity: Severity;
     confidence: Confidence;
     cwe: Cwe;
+    owasp?: OwaspMappings;
     /** POSIX path relative to the scan root. */
     filePath: string;
     /** Alias for filePath, relative to the scan root. */

@@ -7,6 +7,7 @@
  * single list.
  */
 
+import { RESPONSE_HARDENING_RULES } from './response-hardening';
 import { HARDENING_RULES, MISSING_LOCKFILE_RULE, DOCKER_DEFAULT_ROOT_RULE } from './hardening';
 import { AI_VULNERABILITY_RULES } from './ai-vulnerabilities';
 import { CLIENT_EXPOSURE_RULES } from './client-exposure';
@@ -31,6 +32,7 @@ export const SCAN_RULES: readonly Rule[] = [
   ...AI_VULNERABILITY_RULES,
   ...SECRET_ENTROPY_RULES,
   ...HARDENING_RULES,
+  ...RESPONSE_HARDENING_RULES,
   MISSING_LOCKFILE_RULE,
   DOCKER_DEFAULT_ROOT_RULE,
 ];

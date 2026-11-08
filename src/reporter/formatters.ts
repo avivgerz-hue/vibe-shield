@@ -263,6 +263,7 @@ export function formatSarif(result: ScanResult): string {
             severity: finding.severity,
             confidence: finding.confidence,
             cwe: finding.cwe.id,
+            owasp: finding.owasp,
             remediation: finding.remediation,
             secureExample: finding.secureExample,
           },

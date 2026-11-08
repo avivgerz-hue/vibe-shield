@@ -1074,6 +1074,7 @@ async function auditSkills(rootDir, options = {}) {
                     severity: hit.severity ?? rule.severity,
                     confidence: hit.confidence ?? rule.confidence,
                     cwe: rule.cwe,
+                    owasp: rule.owasp,
                     filePath: ctx.relativePath,
                     file: ctx.relativePath,
                     absolutePath: ctx.absolutePath,
