@@ -20,7 +20,7 @@ const read = (relativePath: string): string => readFileSync(path.join(ROOT, rela
 const readJson = <T = Record<string, unknown>>(relativePath: string): T =>
   JSON.parse(read(relativePath)) as T;
 
-const manifest = readJson('package.json') as { version: string };
+const manifest = readJson('package.json') as { name: string; version: string };
 
 describe('mcp registry manifests', () => {
   it('server.json follows the official registry schema', () => {
@@ -35,15 +35,23 @@ describe('mcp registry manifests', () => {
     expect((server.repository as { url?: string }).url).toBe('https://github.com/avivgerz-hue/vibe-shield');
     expect((server.repository as { source?: string }).source).toBe('github');
 
-    // No npm package serves this code: the bare name `vibe-shield` on the
-    // registry belongs to a different publisher, so advertising it would send
-    // every registry consumer to someone else's scanner.
+    // The package is published as `@vibefoundry/vibe-shield`. The bare name
+    // `vibe-shield` on the registry belongs to a different publisher, so the
+    // identifier must stay scoped or every registry consumer is sent to a
+    // stranger's scanner.
     const packages = server.packages as Array<Record<string, unknown>>;
-    expect(packages).toEqual([]);
+    expect(packages).toHaveLength(1);
+    const pkg = packages[0] ?? {};
+    expect(pkg.registryType).toBe('npm');
+    expect(pkg.identifier).toBe('@vibefoundry/vibe-shield');
+    expect(pkg.identifier).not.toBe('vibe-shield');
+    expect(pkg.version).toBe(manifest.version);
+    const transport = pkg.transport as { type?: string };
+    expect(transport.type).toBe('stdio');
   });
 
   it('names the GitHub entry point wherever a command is advertised', () => {
-    const entry = 'github:avivgerz-hue/vibe-shield';
+    const entry = '@vibefoundry/vibe-shield';
     expect(read('glama.json')).toContain(entry);
     expect(read('smithery.yaml')).toContain(entry);
   });
@@ -200,21 +208,21 @@ describe('distribution files exist', () => {
 });
 
 describe('README badges', () => {
-  // The `vibe-shield` name on the npm registry belongs to an unrelated
-  // project. A shields.io npm badge would therefore render *their* version
-  // and download count on our front page, so every badge must be backed by
-  // data we actually control (GitHub, or a literal).
-  it('never renders a badge sourced from the npm registry', () => {
+  // The *unscoped* name `vibe-shield` on npm belongs to an unrelated project,
+  // so a badge pointing at it would render a stranger's version and download
+  // count on our front page. The scoped package is ours; that one may be badged.
+  it('never renders a badge for the unscoped name', () => {
     const readme = read('README.md');
-    expect(readme).not.toMatch(/img\.shields\.io\/npm\//);
+    expect(readme).not.toMatch(/img\.shields\.io\/npm\/[vd]m?\/vibe-shield(\.svg)?\?/);
     expect(readme).not.toMatch(/img\.shields\.io\/node\/v\//);
     expect(readme).not.toMatch(/npmjs\.com\/package\/vibe-shield/);
   });
 
-  it('sources the version badge from this repository', () => {
-    expect(read('README.md')).toContain(
-      'img.shields.io/github/package-json/v/avivgerz-hue/vibe-shield',
-    );
+  it('shows the scoped npm version and download badges', () => {
+    const readme = read('README.md');
+    expect(readme).toContain('https://img.shields.io/npm/v/@vibefoundry/vibe-shield.svg');
+    expect(readme).toContain('https://img.shields.io/npm/dm/@vibefoundry/vibe-shield.svg');
+    expect(readme).toContain('https://www.npmjs.com/package/@vibefoundry/vibe-shield');
   });
 });
 
@@ -254,5 +262,32 @@ describe('container entrypoint', () => {
     for (const entry of ['node_modules', '.git', 'tests', 'coverage', 'src']) {
       expect(ignored, entry).toContain(entry);
     }
+  });
+});
+
+describe('scoped npm identity', () => {
+  it('publishes as the scoped name with a warning-free bin path', () => {
+    const pkg = readJson<{ name: string; bin: Record<string, string>; publishConfig?: { access?: string } }>(
+      'package.json',
+    );
+    expect(pkg.name).toBe('@vibefoundry/vibe-shield');
+    // npm v11 warns about a leading `./` in bin entries.
+    expect(pkg.bin['vibe-shield']).toBe('dist/bin/vibe-shield.js');
+    expect(pkg.bin['vibe-shield'].startsWith('./')).toBe(false);
+    // Scoped packages default to restricted; publishing requires this.
+    expect(pkg.publishConfig?.access).toBe('public');
+  });
+
+  it('keeps the lockfile name in sync, or npm ci refuses to run', () => {
+    const lock = readJson<{ name: string; packages: Record<string, { name?: string }> }>('package-lock.json');
+    const pkg = readJson<{ name: string }>('package.json');
+    expect(lock.name).toBe(pkg.name);
+    expect(lock.packages['']?.name).toBe(pkg.name);
+  });
+
+  it('pins the .mcp.json entry so VSB-AGENT-004 stays satisfied', () => {
+    const pkg = readJson<{ version: string }>('package.json');
+    const args = MCP_SERVER_ENTRY.args;
+    expect(args).toContain(`@vibefoundry/vibe-shield@${pkg.version}`);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "name": "vibe-shield",
+  "name": "@vibefoundry/vibe-shield",
   "version": "1.1.0",
   "description": "High-speed static security analyzer and MCP/agent-skill guard for AI-generated codebases. Catches the vulnerabilities autonomous coding agents ship: leaked secrets, unguarded mutation routes, missing Postgres RLS, unverified webhooks, prompt injection sinks and XSS.",
   "keywords": [
@@ -60,7 +60,7 @@
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "bin": {
-    "vibe-shield": "./dist/bin/vibe-shield.js"
+    "vibe-shield": "dist/bin/vibe-shield.js"
   },
   "files": [
     "dist/bin",
@@ -92,5 +92,8 @@
     "@vitest/coverage-v8": "^5.1.0",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -216,9 +216,9 @@ function renderFooter(result, color) {
     if (critical > 0) {
         lines.push(color.red(`  ⚠  ${critical} critical finding${critical === 1 ? '' : 's'} — rotate any exposed credential before anything else.`));
     }
-    lines.push(`  ${color.bold('Fix it')}      npx github:avivgerz-hue/vibe-shield scan --fix-prompt    ${color.dim('# writes SECURITY_PATCH_PROMPT.md for your agent')}`);
-    lines.push(`  ${color.bold('Explain')}     npx github:avivgerz-hue/vibe-shield explain ${result.findings[0]?.ruleId ?? 'VSB-AI-001'}`);
-    lines.push(`  ${color.bold('Gate CI')}     npx github:avivgerz-hue/vibe-shield scan --fail-on ${worst} --format github`);
+    lines.push(`  ${color.bold('Fix it')}      npx -y @vibefoundry/vibe-shield scan --fix-prompt    ${color.dim('# writes SECURITY_PATCH_PROMPT.md for your agent')}`);
+    lines.push(`  ${color.bold('Explain')}     npx -y @vibefoundry/vibe-shield explain ${result.findings[0]?.ruleId ?? 'VSB-AI-001'}`);
+    lines.push(`  ${color.bold('Gate CI')}     npx -y @vibefoundry/vibe-shield scan --fail-on ${worst} --format github`);
     for (const notice of result.notices)
         lines.push(color.dim(`  ${notice}`));
     return lines;

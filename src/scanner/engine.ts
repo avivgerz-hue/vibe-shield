@@ -578,7 +578,11 @@ export async function packageVersion(): Promise<string> {
     try {
       const raw = await fs.readFile(path.join(dir, 'package.json'), 'utf8');
       const parsed = JSON.parse(raw) as { name?: string; version?: string };
-      if (parsed.name === 'vibe-shield' && parsed.version) {
+      // Match the scoped name *or* the legacy bare one, so an install made
+      // before the package was published under `@vibefoundry/` still resolves
+      // its own version instead of reporting the fallback.
+      const isThisPackage = parsed.name === '@vibefoundry/vibe-shield' || parsed.name === 'vibe-shield';
+      if (isThisPackage && parsed.version) {
         cachedVersion = parsed.version;
         return cachedVersion;
       }

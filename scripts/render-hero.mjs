@@ -150,7 +150,7 @@ function render(scan, audit, fixtureDir) {
   /* ---- command --------------------------------------------------------- */
   y += 12;
   span(PAD, '$', C.green, { weight: 700 });
-  span(PAD + CH * 2, 'npx github:avivgerz-hue/vibe-shield scan', C.white);
+  span(PAD + CH * 2, 'npx -y @vibefoundry/vibe-shield scan', C.white);
 
   y += LH - 6;
   span(PAD, '🛡️', C.cyan);
@@ -198,7 +198,7 @@ function render(scan, audit, fixtureDir) {
     `<line x1="${PAD}" y1="${y - LH}" x2="${W - PAD}" y2="${y - LH}" stroke="${C.border}" stroke-dasharray="3 4"/>`,
   );
   span(PAD, '$', C.green, { weight: 700 });
-  span(PAD + CH * 2, 'npx github:avivgerz-hue/vibe-shield audit-skills', C.white);
+  span(PAD + CH * 2, 'npx -y @vibefoundry/vibe-shield audit-skills', C.white);
   y += LH + 2;
 
   const aGrade = audit.score.grade;

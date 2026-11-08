@@ -14,7 +14,7 @@
 Email **security@vibefoundry.dev** with:
 
 - a description of the issue and its impact
-- the affected version (`npx github:avivgerz-hue/vibe-shield version`)
+- the affected version (`npx -y @vibefoundry/vibe-shield version`)
 - a minimal reproduction (a snippet, a repository, or a failing test)
 - whether you intend to publish, and any deadline you are working to
 

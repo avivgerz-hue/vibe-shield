@@ -118,15 +118,18 @@ INIT OPTIONS
   --yes                  Accepted for non-interactive CI use (init never prompts).
 
 EXAMPLES
-  npx github:avivgerz-hue/vibe-shield scan
-  npx github:avivgerz-hue/vibe-shield scan --fail-on high --format github
-  npx github:avivgerz-hue/vibe-shield scan --fix-prompt
-  npx github:avivgerz-hue/vibe-shield init
-  npx github:avivgerz-hue/vibe-shield explain VSB-DB-001
-  npx github:avivgerz-hue/vibe-shield audit-skills .claude
+  npx -y @vibefoundry/vibe-shield scan
+  npx -y @vibefoundry/vibe-shield scan --fail-on high --format github
+  npx -y @vibefoundry/vibe-shield scan --fix-prompt
+  npx -y @vibefoundry/vibe-shield init
+  npx -y @vibefoundry/vibe-shield explain VSB-DB-001
+  npx -y @vibefoundry/vibe-shield audit-skills .claude
 `;
 exports.HELP_TEXT = HELP;
 const BOOLEAN_FLAGS = new Set([
+    // `--mcp` is an alias for the `mcp` subcommand, so `npx -y
+    // @vibefoundry/vibe-shield --mcp` works the way most MCP clients expect.
+    'mcp',
     'fix-prompt',
     'include-tests',
     'include-docs',
@@ -257,7 +260,7 @@ async function emitReport(result, io, options, parsed) {
         write(io, 'stdout', (0, formatters_1.formatResult)(result, options.format));
     }
     if (patchPath) {
-        write(io, 'stderr', `\n📝 Wrote ${path.relative(io.cwd, patchPath) || patchPath} — hand it to your agent, or run \`npx github:avivgerz-hue/vibe-shield scan\` after fixing.\n`);
+        write(io, 'stderr', `\n📝 Wrote ${path.relative(io.cwd, patchPath) || patchPath} — hand it to your agent, or run \`npx -y @vibefoundry/vibe-shield scan\` after fixing.\n`);
     }
     if (options.out) {
         const target = path.resolve(io.cwd, options.out);
@@ -386,8 +389,8 @@ async function commandInit(parsed, io) {
     for (const warning of result.warnings)
         write(io, 'stdout', `  ${color.yellow('note')}     ${warning}\n`);
     write(io, 'stdout', `\n${color.bold('Next steps')}\n`);
-    write(io, 'stdout', `  1. ${color.dim('npx github:avivgerz-hue/vibe-shield scan')}                 ${color.dim('# baseline your repo')}\n`);
-    write(io, 'stdout', `  2. ${color.dim('npx github:avivgerz-hue/vibe-shield scan --fix-prompt')}   ${color.dim('# generate the fix list')}\n`);
+    write(io, 'stdout', `  1. ${color.dim('npx -y @vibefoundry/vibe-shield scan')}                 ${color.dim('# baseline your repo')}\n`);
+    write(io, 'stdout', `  2. ${color.dim('npx -y @vibefoundry/vibe-shield scan --fix-prompt')}   ${color.dim('# generate the fix list')}\n`);
     write(io, 'stdout', `  3. Commit the new files — your agent now audits before it says "done".\n\n`);
     return exports.EXIT_OK;
 }
@@ -429,7 +432,7 @@ function commandRules(parsed, io) {
         }
         write(io, 'stdout', `  ${color.dim(rule.id.padEnd(14))} ${rule.severity.padEnd(9)} ${rule.title}\n`);
     }
-    write(io, 'stdout', `\n${color.dim('Run `npx github:avivgerz-hue/vibe-shield explain <RULE_ID>` for the full documentation.')}\n\n`);
+    write(io, 'stdout', `\n${color.dim('Run `npx -y @vibefoundry/vibe-shield explain <RULE_ID>` for the full documentation.')}\n\n`);
     return exports.EXIT_OK;
 }
 function commandExplain(parsed, io) {
@@ -496,7 +499,8 @@ async function commandMcp(parsed, io) {
 /** Run the CLI. Returns the process exit code. */
 async function run(argv, io = (0, exports.defaultIo)()) {
     const parsed = parseArgs(argv);
-    const command = parsed.command || (flagBool(parsed, 'version') ? 'version' : flagBool(parsed, 'help') ? 'help' : '');
+    const command = parsed.command ||
+        (flagBool(parsed, 'mcp') ? 'mcp' : flagBool(parsed, 'version') ? 'version' : flagBool(parsed, 'help') ? 'help' : '');
     if (parsed.unknown.length) {
         write(io, 'stderr', `vibe-shield: unknown option${parsed.unknown.length === 1 ? '' : 's'} ${parsed.unknown.join(', ')}\n`);
         write(io, 'stderr', 'Run `vibe-shield help` for usage.\n');

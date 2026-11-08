@@ -737,7 +737,7 @@ describe('reporters', () => {
     expect(prompt).toContain('**Target shape after the fix**');
     // Must name an install source that actually serves this code — the bare
     // npm name `vibe-shield` belongs to a different publisher.
-    expect(prompt).toContain('npx github:avivgerz-hue/vibe-shield scan --fail-on high');
+    expect(prompt).toContain('npx -y @vibefoundry/vibe-shield scan --fail-on high');
     expect(prompt).toContain('- [ ] Every credential');
   });
 

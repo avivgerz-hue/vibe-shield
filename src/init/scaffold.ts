@@ -1,5 +1,5 @@
 /**
- * vibe-shield :: `npx github:avivgerz-hue/vibe-shield init`
+ * vibe-shield :: `npx -y @vibefoundry/vibe-shield init`
  * -------------------------------------
  * One command turns any repository into a guarded one. It installs:
  *
@@ -14,7 +14,7 @@
  * command is safe to re-run.
  */
 
-import { promises as fs } from 'node:fs';
+import { promises as fs, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 
 /** One file the scaffolder wants to create. */
@@ -41,14 +41,14 @@ export interface InitOptions {
   force?: boolean;
   /** Print what would happen without writing. */
   dryRun?: boolean;
-  /** Pin a specific version in the workflow (default `latest`). */
-  version?: string;
   /**
-   * Commit to pin the `.mcp.json` entry to. Resolved from the installed package
-   * when omitted; see `resolveInstallRev`.
+   * Version to pin in both the workflow and the `.mcp.json` entry.
+   *
+   * Resolved from the installed package when omitted; see
+   * `packageVersionFromDisk`.
    */
-  rev?: string | null;
-  /** Environment to read the revision override from. Defaults to `process.env`. */
+  version?: string | null;
+  /** Environment to read the version override from. Defaults to `process.env`. */
   env?: NodeJS.ProcessEnv;
 }
 
@@ -63,7 +63,7 @@ export interface InitResult {
 
 import { SELF_GITHUB_SPEC } from '../scanner/rules/shared';
 
-const BANNER = '<!-- Managed by vibe-shield. Edit freely; `npx github:avivgerz-hue/vibe-shield init --force` regenerates this file. -->';
+const BANNER = '<!-- Managed by vibe-shield. Edit freely; `npx -y @vibefoundry/vibe-shield init --force` regenerates this file. -->';
 
 /* -------------------------------------------------------------------------- */
 /* SKILL.md                                                                   */
@@ -72,7 +72,7 @@ const BANNER = '<!-- Managed by vibe-shield. Edit freely; `npx github:avivgerz-h
 export const SKILL_TEMPLATE = `---
 name: vibe-shield
 description: Audit any change for AI-introduced security bugs (leaked keys, unguarded API routes, disabled Row Level Security, SQL injection, prompt injection, poisoned MCP servers) and fix them before reporting a task as done. Use whenever you write or modify application code, API routes, server actions, database migrations, auth logic, environment variables, LLM calls, webhook handlers, agent skills or MCP configuration.
-allowed-tools: Bash(npx github:avivgerz-hue/vibe-shield scan*), Bash(npx github:avivgerz-hue/vibe-shield audit-skills*), Bash(npx github:avivgerz-hue/vibe-shield explain*), Read(./**), Grep, Glob
+allowed-tools: Bash(npx -y @vibefoundry/vibe-shield scan*), Bash(npx -y @vibefoundry/vibe-shield audit-skills*), Bash(npx -y @vibefoundry/vibe-shield explain*), Read(./**), Grep, Glob
 license: MIT
 metadata:
   author: VibeFoundry
@@ -103,17 +103,17 @@ If you did not touch any of those, you do not need to run it.
 
 \`\`\`bash
 # 1. Scan (a whole-repo scan finishes in well under a second)
-npx github:avivgerz-hue/vibe-shield scan --fail-on high
+npx -y @vibefoundry/vibe-shield scan --fail-on high
 
 # 2. If it fails, generate the machine-readable fix list
-npx github:avivgerz-hue/vibe-shield scan --fix-prompt
+npx -y @vibefoundry/vibe-shield scan --fix-prompt
 
 # 3. Read SECURITY_PATCH_PROMPT.md and fix every finding, critical first
 #    Each entry has the exact file:line, the vulnerable snippet, the CWE and
 #    the required change. Apply it literally.
 
 # 4. Re-run until it exits 0
-npx github:avivgerz-hue/vibe-shield scan --fail-on high
+npx -y @vibefoundry/vibe-shield scan --fail-on high
 \`\`\`
 
 \`--fail-on high\` exits non-zero while any high or critical finding exists. That is the gate.
@@ -132,7 +132,7 @@ CRITICAL 47:15    VSB-CLIENT-001  Server-only secret exposed through a public en
 | message | why this specific line is exploitable |
 | \`(CWE-200)\` | bug class, for a deeper search if the fix is unclear |
 
-Need the full picture? \`npx github:avivgerz-hue/vibe-shield explain VSB-CLIENT-001\` prints the vulnerable shape, the fixed shape, remediation steps and references.
+Need the full picture? \`npx -y @vibefoundry/vibe-shield explain VSB-CLIENT-001\` prints the vulnerable shape, the fixed shape, remediation steps and references.
 
 ## Hard rules
 
@@ -147,7 +147,7 @@ Need the full picture? \`npx github:avivgerz-hue/vibe-shield explain VSB-CLIENT-
 When you add or modify a skill, rule file, MCP server or instruction file, also run:
 
 \`\`\`bash
-npx github:avivgerz-hue/vibe-shield audit-skills
+npx -y @vibefoundry/vibe-shield audit-skills
 \`\`\`
 
 Twelve \`VSB-AGENT-*\` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), \`curl\`/\`wget\` exfiltration of environment variables, credential-harvesting instructions (\`.env\`, \`~/.ssh\`, \`~/.aws\`), registry-tag or remote MCP servers, literal tokens in an \`env\` block, safety-override language, over-broad tool permissions, base64 \`eval\` payloads, remote-instruction fetching, wildcard \`allowed-tools\`, and shell injection in skill scripts.
@@ -177,8 +177,8 @@ return structured findings instead of text you have to parse.
 
 ## Definition of done
 
-- [ ] \`npx github:avivgerz-hue/vibe-shield scan --fail-on high\` exits \`0\`
-- [ ] \`npx github:avivgerz-hue/vibe-shield audit-skills\` exits \`0\` if you touched agent files
+- [ ] \`npx -y @vibefoundry/vibe-shield scan --fail-on high\` exits \`0\`
+- [ ] \`npx -y @vibefoundry/vibe-shield audit-skills\` exits \`0\` if you touched agent files
 - [ ] every credential the scan surfaced has been flagged to the user for rotation
 - [ ] no suppression directive was added
 - [ ] the feature still works and the existing tests still pass
@@ -186,7 +186,7 @@ return structured findings instead of text you have to parse.
 ## Install it into a repository
 
 \`\`\`bash
-npx github:avivgerz-hue/vibe-shield init
+npx -y @vibefoundry/vibe-shield init
 \`\`\`
 
 That writes this file to \`.claude/skills/vibe-shield/SKILL.md\`, appends a security
@@ -205,11 +205,11 @@ This repository is guarded by [vibe-shield](https://github.com/avivgerz-hue/vibe
 
 Before you report any task as complete:
 
-1. Run \`npx github:avivgerz-hue/vibe-shield scan --fail-on high\` and fix every finding it reports.
+1. Run \`npx -y @vibefoundry/vibe-shield scan --fail-on high\` and fix every finding it reports.
 2. Never suppress a finding (\`vibe-shield-disable\`, \`.vibe-shieldignore\` edits,
    \`--ignore\`) to make the gate pass — that is the human's call.
 3. If you touched \`.claude/\`, \`.cursor/\`, \`AGENTS.md\`, \`mcp.json\` or a skill,
-   also run \`npx github:avivgerz-hue/vibe-shield audit-skills\`.
+   also run \`npx -y @vibefoundry/vibe-shield audit-skills\`.
 4. Surface any exposed credential to the user for rotation. Do not "fix" it by
    deleting the line and moving on.
 
@@ -231,22 +231,26 @@ export const MCP_SERVER_KEY = 'vibe-shield';
  * `npx` is used rather than a local path so the config keeps working when the
  * project is cloned elsewhere or the package is upgraded.
  *
- * The spec carries a `#<commit>` pin when `init` can determine one. A bare
- * `github:owner/repo` re-resolves to the default branch head on every fresh
- * install, so a mixed commit could change what runs the next time the server
- * starts. Pin the commit that wrote this file and upgrades become explicit
- * (`init --force` rewrites it).
+ * The spec is always pinned to an exact version — `@vibefoundry/vibe-shield@1.1.0`.
+ * Two reasons: a bare name re-resolves to whatever `latest` points at on every
+ * launch, and vibe-shield's own `VSB-AGENT-004` rule flags an unpinned `npx -y`
+ * server as high severity. Pinning keeps the gate at A+ for projects that adopt
+ * the tool, and upgrades become explicit (`init --force` rewrites the pin).
  */
 export const MCP_SERVER_SPEC = SELF_GITHUB_SPEC;
 
-/** Build the `.mcp.json` entry, pinned to `rev` when one is known. */
-export function mcpServerEntry(rev?: string | null): { command: string; args: string[] } {
-  const spec = rev ? `${MCP_SERVER_SPEC}#${rev}` : MCP_SERVER_SPEC;
+/** Build the `.mcp.json` entry, pinned to `version` when one is known. */
+export function mcpServerEntry(version?: string | null): { command: string; args: string[] } {
+  const spec = version ? `${MCP_SERVER_SPEC}@${version}` : MCP_SERVER_SPEC;
   return { command: 'npx', args: ['--yes', spec, 'mcp'] };
 }
 
-/** The unpinned entry, kept for callers that have no commit available. */
-export const MCP_SERVER_ENTRY = mcpServerEntry();
+/**
+ * The entry as this install writes it: pinned to the running package version.
+ * Falls back to unpinned only in a stripped checkout where no `package.json`
+ * names this package, which is the one case where no version is knowable.
+ */
+export const MCP_SERVER_ENTRY = mcpServerEntry(packageVersionFromDisk());
 
 /**
  * Merge the vibe-shield server into an existing `.mcp.json` without disturbing
@@ -258,57 +262,36 @@ export const MCP_SERVER_ENTRY = mcpServerEntry();
  * rewriting someone's MCP config could break every server they run.
  */
 /**
- * Find the commit of the running install, so `.mcp.json` can pin it.
+ * The version of the running install, used to pin `.mcp.json`.
  *
- * Deliberately conservative: returns `null` rather than guessing, because a
- * wrong pin is worse than no pin (it would silently freeze the server on an
- * unrelated commit). The revision is only derivable when the CLI is running
- * from inside an npm install of this package, which is the `npx github:` case.
- *
- * Order:
- *   1. `VIBE_SHIELD_REV` — an explicit override, used by tests and CI.
- *   2. The `resolved` field npm records in the *parent* project's lockfile.
- *   3. `/app/.rev` — written into the container image at build time.
+ * Read from the nearest `package.json` that names this package. Falls back to
+ * the range in `package.json` only if nothing is found, which keeps `init`
+ * working in a stripped-down checkout rather than writing a nameless spec.
  */
-export async function resolveInstallRev(rootDir?: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
-  const explicit = env.VIBE_SHIELD_REV?.trim();
-  if (explicit) return explicit;
-
-  const shaPattern = /(?:[?#]([0-9a-f]{40}))\b/i;
-
-  // A lockfile one or two directories above this file, in an npm install.
+export function packageVersionFromDisk(): string | null {
   let dir = __dirname;
-  for (let depth = 0; depth < 4; depth += 1) {
-    for (const name of ['package-lock.json', 'npm-shrinkwrap.json']) {
-      try {
-        const raw = await fs.readFile(path.join(dir, name), 'utf8');
-        const match = raw.match(shaPattern);
-        if (match?.[1]) return match[1];
-      } catch {
-        // Keep walking.
+  for (let depth = 0; depth < 6; depth += 1) {
+    try {
+      const raw = readFileSync(path.join(dir, 'package.json'), 'utf8');
+      const parsed = JSON.parse(raw) as { name?: string; version?: string };
+      if ((parsed.name === SELF_GITHUB_SPEC || parsed.name === 'vibe-shield') && parsed.version) {
+        return parsed.version;
       }
+    } catch {
+      // Keep walking up.
     }
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-
-  try {
-    const rev = (await fs.readFile('/app/.rev', 'utf8')).trim();
-    if (/^[0-9a-f]{40}$/i.test(rev)) return rev;
-  } catch {
-    // Not in the container image.
-  }
-
-  void rootDir;
   return null;
 }
 
 export function mergeMcpConfig(
   existing: string | null,
-  options: { force?: boolean; rev?: string | null } = {},
+  options: { force?: boolean; version?: string | null } = {},
 ): { contents: string; changed: boolean; error?: string } {
-  const entry = mcpServerEntry(options.rev);
+  const entry = mcpServerEntry(options.version ?? packageVersionFromDisk());
   if (existing === null || existing.trim() === '') {
     return {
       contents: `${JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: entry } }, null, 2)}\n`,
@@ -380,7 +363,7 @@ jobs:
           node-version: 20
 
       - name: Scan for vulnerabilities
-        run: npx --yes github:avivgerz-hue/vibe-shield scan --format sarif --out vibe-shield.sarif --fail-on high
+        run: npx -y @vibefoundry/vibe-shield scan --format sarif --out vibe-shield.sarif --fail-on high
         continue-on-error: true
 
       - name: Upload SARIF to code scanning
@@ -391,10 +374,10 @@ jobs:
           category: vibe-shield
 
       - name: Audit agent surface
-        run: npx --yes github:avivgerz-hue/vibe-shield audit-skills --fail-on high
+        run: npx -y @vibefoundry/vibe-shield audit-skills --fail-on high
 
       - name: Enforce the gate
-        run: npx --yes github:avivgerz-hue/vibe-shield scan --fail-on high --quiet
+        run: npx -y @vibefoundry/vibe-shield scan --fail-on high --quiet
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -434,7 +417,7 @@ ${BANNER}
 
 # Security gate
 
-Before reporting a task complete, run \`npx github:avivgerz-hue/vibe-shield scan --fail-on high\` and
+Before reporting a task complete, run \`npx -y @vibefoundry/vibe-shield scan --fail-on high\` and
 fix every finding. Never suppress a finding to make the gate pass. If the scan
 reports an exposed credential, tell the user to rotate it at the provider.
 `;
@@ -506,7 +489,7 @@ const exists = async (file: string): Promise<boolean> => {
 export async function installScaffold(options: InitOptions): Promise<InitResult> {
   const rootDir = path.resolve(options.rootDir);
   const result: InitResult = { written: [], appended: [], skipped: [], blocked: [], warnings: [] };
-  const resolvedRev = options.rev === undefined ? await resolveInstallRev(rootDir, options.env) : options.rev;
+  const resolvedVersion = options.version ?? options.env?.VIBE_SHIELD_VERSION ?? packageVersionFromDisk();
   const files = buildScaffold(options);
 
   for (const file of files) {
@@ -546,7 +529,7 @@ export async function installScaffold(options: InitOptions): Promise<InitResult>
           existing = null;
         }
       }
-      const merged = mergeMcpConfig(existing, { force: options.force, rev: resolvedRev });
+      const merged = mergeMcpConfig(existing, { force: options.force, version: resolvedVersion });
       if (merged.error) {
         // Not a `skipped` entry: `--force` cannot repair invalid JSON, so the
         // summary must not suggest it can.
@@ -581,10 +564,10 @@ export async function installScaffold(options: InitOptions): Promise<InitResult>
     result.written.push(file.relativePath);
   }
 
-  // A repository without a package.json will not be able to `npx github:avivgerz-hue/vibe-shield`
+  // A repository without a package.json will not be able to `npx -y @vibefoundry/vibe-shield`
   // as a dev dependency; it still works through npx, so this is only a warning.
   if (!(await exists(path.join(rootDir, 'package.json')))) {
-    result.warnings.push('No package.json found — run the gate with `npx github:avivgerz-hue/vibe-shield scan`.');
+    result.warnings.push('No package.json found — run the gate with `npx -y @vibefoundry/vibe-shield scan`.');
   }
   if (!(await exists(path.join(rootDir, '.git')))) {
     result.warnings.push('No .git directory found — the workflow only runs once this is a git repository.');

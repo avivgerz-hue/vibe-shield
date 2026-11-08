@@ -81,7 +81,7 @@ export declare const confident: (value: Confidence, boost?: boolean) => Confiden
  * Single source of truth: `init` writes it into `.mcp.json`, and the auditor
  * recognises it there. Keeping one constant means the two can never drift.
  */
-export declare const SELF_GITHUB_SPEC = "github:avivgerz-hue/vibe-shield";
+export declare const SELF_GITHUB_SPEC = "@vibefoundry/vibe-shield";
 /** First-party install specs the auditor vouches for without a `@sha`. */
 export declare const SELF_INSTALL_SPECS: readonly string[];
 /**

@@ -423,12 +423,13 @@ describe('init', () => {
   it('writes a pinned .mcp.json that survives the audit', async () => {
     const project = makeProject({ 'package.json': JSON.stringify({ name: 'x' }) });
     try {
-      const rev = 'b786c206c833bfb837f0e70db56b80cf4ca78b1a';
-      expect(await run(['init', '--agent', 'claude'], makeIo(project.root, { VIBE_SHIELD_REV: rev }))).toBe(0);
+      const version = '1.1.0';
+      expect(await run(['init', '--agent', 'claude'], makeIo(project.root, { VIBE_SHIELD_VERSION: version }))).toBe(0);
       const config = JSON.parse(readFileSync(path.join(project.root, '.mcp.json'), 'utf8'));
-      // An immutable pin, so a fresh `npx` cannot silently resolve to a
-      // different commit than the one that wrote this file.
-      expect(config.mcpServers['vibe-shield'].args).toContain(`github:avivgerz-hue/vibe-shield#${rev}`);
+      // An exact pin, so a fresh `npx` cannot silently resolve to whatever
+      // `latest` points at by the time the server next starts — and so the
+      // entry does not trip VSB-AGENT-004.
+      expect(config.mcpServers['vibe-shield'].args).toContain(`@vibefoundry/vibe-shield@${version}`);
       const io = makeIo(project.root);
       expect(await run(['audit-skills'], io)).toBe(0);
       expect(io.out()).toContain('A+');
@@ -578,7 +579,7 @@ describe('package contract', () => {
   };
 
   it('exposes the documented bin path', () => {
-    expect(manifest.bin['vibe-shield']).toBe('./dist/bin/vibe-shield.js');
+    expect(manifest.bin['vibe-shield']).toBe('dist/bin/vibe-shield.js');
   });
 
   it('ships zero runtime dependencies', () => {
@@ -626,5 +627,22 @@ describe('package contract', () => {
     // dist/ is missing and a local typescript exists.
     expect(manifest.scripts.prepare).toContain('prepare.mjs');
     expect(manifest.scripts.prepublishOnly).toContain('verify');
+  });
+});
+
+describe('--mcp alias', () => {
+  // `npx -y @vibefoundry/vibe-shield --mcp` is how most client configs spell the
+  // MCP invocation, but the CLI only ever accepted the `mcp` subcommand — the
+  // flag exited 2 with "unknown option" for anyone who pasted the documented
+  // form. Assert the parser routes it rather than accepting it silently.
+  it('routes --mcp to the mcp subcommand', () => {
+    const parsed = parseArgs(['--mcp']);
+    expect(parsed.unknown).toEqual([]);
+    expect(parsed.flags.get('mcp')).toBe(true);
+  });
+
+  it('still rejects a genuinely unknown flag', () => {
+    const parsed = parseArgs(['--not-a-real-flag']);
+    expect(parsed.unknown).toContain('--not-a-real-flag');
   });
 });

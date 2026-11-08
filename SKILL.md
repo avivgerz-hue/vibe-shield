@@ -1,7 +1,7 @@
 ---
 name: vibe-shield
 description: Audit any change for AI-introduced security bugs (leaked keys, unguarded API routes, disabled Row Level Security, SQL injection, prompt injection, poisoned MCP servers) and fix them before reporting a task as done. Use whenever you write or modify application code, API routes, server actions, database migrations, auth logic, environment variables, LLM calls, webhook handlers, agent skills or MCP configuration.
-allowed-tools: Bash(npx github:avivgerz-hue/vibe-shield scan*), Bash(npx github:avivgerz-hue/vibe-shield audit-skills*), Bash(npx github:avivgerz-hue/vibe-shield explain*), Read(./**), Grep, Glob
+allowed-tools: Bash(npx -y @vibefoundry/vibe-shield scan*), Bash(npx -y @vibefoundry/vibe-shield audit-skills*), Bash(npx -y @vibefoundry/vibe-shield explain*), Read(./**), Grep, Glob
 license: MIT
 metadata:
   author: VibeFoundry
@@ -32,17 +32,17 @@ If you did not touch any of those, you do not need to run it.
 
 ```bash
 # 1. Scan (a whole-repo scan finishes in well under a second)
-npx github:avivgerz-hue/vibe-shield scan --fail-on high
+npx -y @vibefoundry/vibe-shield scan --fail-on high
 
 # 2. If it fails, generate the machine-readable fix list
-npx github:avivgerz-hue/vibe-shield scan --fix-prompt
+npx -y @vibefoundry/vibe-shield scan --fix-prompt
 
 # 3. Read SECURITY_PATCH_PROMPT.md and fix every finding, critical first
 #    Each entry has the exact file:line, the vulnerable snippet, the CWE and
 #    the required change. Apply it literally.
 
 # 4. Re-run until it exits 0
-npx github:avivgerz-hue/vibe-shield scan --fail-on high
+npx -y @vibefoundry/vibe-shield scan --fail-on high
 ```
 
 `--fail-on high` exits non-zero while any high or critical finding exists. That is the gate.
@@ -61,7 +61,7 @@ CRITICAL 47:15    VSB-CLIENT-001  Server-only secret exposed through a public en
 | message | why this specific line is exploitable |
 | `(CWE-200)` | bug class, for a deeper search if the fix is unclear |
 
-Need the full picture? `npx github:avivgerz-hue/vibe-shield explain VSB-CLIENT-001` prints the vulnerable shape, the fixed shape, remediation steps and references.
+Need the full picture? `npx -y @vibefoundry/vibe-shield explain VSB-CLIENT-001` prints the vulnerable shape, the fixed shape, remediation steps and references.
 
 ## Hard rules
 
@@ -76,7 +76,7 @@ Need the full picture? `npx github:avivgerz-hue/vibe-shield explain VSB-CLIENT-0
 When you add or modify a skill, rule file, MCP server or instruction file, also run:
 
 ```bash
-npx github:avivgerz-hue/vibe-shield audit-skills
+npx -y @vibefoundry/vibe-shield audit-skills
 ```
 
 Twelve `VSB-AGENT-*` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), `curl`/`wget` exfiltration of environment variables, credential-harvesting instructions (`.env`, `~/.ssh`, `~/.aws`), registry-tag or remote MCP servers, literal tokens in an `env` block, safety-override language, over-broad tool permissions, base64 `eval` payloads, remote-instruction fetching, wildcard `allowed-tools`, and shell injection in skill scripts.
@@ -106,8 +106,8 @@ return structured findings instead of text you have to parse.
 
 ## Definition of done
 
-- [ ] `npx github:avivgerz-hue/vibe-shield scan --fail-on high` exits `0`
-- [ ] `npx github:avivgerz-hue/vibe-shield audit-skills` exits `0` if you touched agent files
+- [ ] `npx -y @vibefoundry/vibe-shield scan --fail-on high` exits `0`
+- [ ] `npx -y @vibefoundry/vibe-shield audit-skills` exits `0` if you touched agent files
 - [ ] every credential the scan surfaced has been flagged to the user for rotation
 - [ ] no suppression directive was added
 - [ ] the feature still works and the existing tests still pass
@@ -115,7 +115,7 @@ return structured findings instead of text you have to parse.
 ## Install it into a repository
 
 ```bash
-npx github:avivgerz-hue/vibe-shield init
+npx -y @vibefoundry/vibe-shield init
 ```
 
 That writes this file to `.claude/skills/vibe-shield/SKILL.md`, appends a security

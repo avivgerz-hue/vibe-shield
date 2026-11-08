@@ -25,7 +25,7 @@
   <text x="96" y="46" fill="#5d6b82" font-size="12" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">~/acme-app — vibe-shield</text>
   <line x1="0" y1="58" x2="900" y2="58" stroke="#1e2430"/>
   <text x="26" y="84" fill="#4ade80" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">$</text>
-  <text x="41.66" y="84" fill="#eef3fb" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">npx github:avivgerz-hue/vibe-shield scan</text>
+  <text x="41.66" y="84" fill="#eef3fb" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">npx -y @vibefoundry/vibe-shield scan</text>
   <text x="26" y="99" fill="#56d4dd" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">🛡️</text>
   <text x="51.056" y="99" fill="#56d4dd" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">vibe-shield v1.1.0</text>
   <text x="199.826" y="99" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">· security scan</text>
@@ -49,10 +49,10 @@
   <text x="112.13" y="283" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">1:1</text>
   <text x="159.11" y="283" fill="#ff5c6c" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">VSB-DB-001</text>
   <text x="41.66" y="301" fill="#c9d3e3" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.85">Table created without Row Level Security enabled</text>
-  <text x="26" y="328" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.9">4 files  ·  59 ms  ·  48 rules</text>
+  <text x="26" y="328" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.9">4 files  ·  54 ms  ·  48 rules</text>
   <line x1="26" y1="336" x2="874" y2="336" stroke="#1e2430" stroke-dasharray="3 4"/>
   <text x="26" y="357" fill="#4ade80" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">$</text>
-  <text x="41.66" y="357" fill="#eef3fb" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">npx github:avivgerz-hue/vibe-shield audit-skills</text>
+  <text x="41.66" y="357" fill="#eef3fb" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">npx -y @vibefoundry/vibe-shield audit-skills</text>
   <text x="26" y="380" fill="#56d4dd" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">🛡️</text>
   <text x="51.056" y="380" fill="#56d4dd" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">agent surface audit</text>
   <text x="207.656" y="380" fill="#ffa657" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">GRADE F — 29/100</text>

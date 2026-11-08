@@ -9,7 +9,16 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/avivgerz-hue/vibe-shield#readme",
-  "packages": [],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@vibefoundry/vibe-shield",
+      "version": "1.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
   "keywords": [
     "security",
     "sast",
