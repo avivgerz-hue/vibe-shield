@@ -3,7 +3,7 @@
  * vibe-shield :: postbuild
  * ------------------------
  * `tsc` emits the CLI without the executable bit and without a guaranteed
- * shebang on every platform, which breaks `npx vibe-shield` and `npm link`.
+ * shebang on every platform, which breaks `npx github:avivgerz-hue/vibe-shield` and `npm link`.
  * This script fixes both, then asserts that the entry points really exist so a
  * silent build regression fails here instead of at the user's shell.
  */

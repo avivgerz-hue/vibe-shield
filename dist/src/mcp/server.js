@@ -334,7 +334,7 @@ async function callTool(name, args, options = {}) {
                 return errorResult('`ruleId` is required, e.g. "VSB-CLIENT-001".');
             const rule = (0, rules_1.getRule)(ruleId);
             if (!rule)
-                return errorResult(`Unknown rule "${ruleId}". Call tools/list or \`npx vibe-shield rules\` for the catalogue.`);
+                return errorResult(`Unknown rule "${ruleId}". Call tools/list or \`npx github:avivgerz-hue/vibe-shield rules\` for the catalogue.`);
             return explainRuleResult(rule);
         }
         return errorResult(`Unknown tool "${name}".`);

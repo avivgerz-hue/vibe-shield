@@ -9,7 +9,7 @@
   "version": "1.1.0",
   "runtime": "node",
   "transport": "stdio",
-  "startCommand": "npx --yes vibe-shield@latest mcp",
+  "startCommand": "npx --yes github:avivgerz-hue/vibe-shield mcp",
   "tools": [
     {
       "name": "vibe_shield_scan",

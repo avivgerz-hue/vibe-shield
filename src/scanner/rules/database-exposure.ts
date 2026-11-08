@@ -77,7 +77,7 @@ const tableWithoutRls: Rule = defineRule({
     'Add `alter table public.<table> enable row level security;` to the migration that creates the table (never a later one).',
     'Add a policy that scopes rows to the caller, e.g. `using (auth.uid() = user_id)` for each of select/insert/update/delete.',
     'Use the service-role key only in server code, and only where bypassing RLS is genuinely required.',
-    'Run `npx vibe-shield scan` again — the table should disappear from this report even if no policy was added yet (deny-all is safe).',
+    'Run `npx github:avivgerz-hue/vibe-shield scan` again — the table should disappear from this report even if no policy was added yet (deny-all is safe).',
   ],
   references: [
     'https://supabase.com/docs/guides/database/postgres/row-level-security',

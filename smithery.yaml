@@ -21,7 +21,7 @@ startCommand:
     |-
     (config) => ({
       command: 'npx',
-      args: ['--yes', 'vibe-shield@latest', 'mcp'],
+      args: ['--yes', 'github:avivgerz-hue/vibe-shield', 'mcp'],
       env: config.target ? { VIBE_SHIELD_TARGET: config.target } : {}
     })
   exampleConfig:

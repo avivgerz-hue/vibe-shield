@@ -86,12 +86,12 @@ INIT OPTIONS
   --yes                  Accepted for non-interactive CI use (init never prompts).
 
 EXAMPLES
-  npx vibe-shield scan
-  npx vibe-shield scan --fail-on high --format github
-  npx vibe-shield scan --fix-prompt
-  npx vibe-shield init
-  npx vibe-shield explain VSB-DB-001
-  npx vibe-shield audit-skills .claude
+  npx github:avivgerz-hue/vibe-shield scan
+  npx github:avivgerz-hue/vibe-shield scan --fail-on high --format github
+  npx github:avivgerz-hue/vibe-shield scan --fix-prompt
+  npx github:avivgerz-hue/vibe-shield init
+  npx github:avivgerz-hue/vibe-shield explain VSB-DB-001
+  npx github:avivgerz-hue/vibe-shield audit-skills .claude
 `;
 
 /* -------------------------------------------------------------------------- */
@@ -267,7 +267,7 @@ async function emitReport(
     write(
       io,
       'stderr',
-      `\n📝 Wrote ${path.relative(io.cwd, patchPath) || patchPath} — hand it to your agent, or run \`npx vibe-shield scan\` after fixing.\n`,
+      `\n📝 Wrote ${path.relative(io.cwd, patchPath) || patchPath} — hand it to your agent, or run \`npx github:avivgerz-hue/vibe-shield scan\` after fixing.\n`,
     );
   }
 
@@ -409,8 +409,8 @@ async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
   for (const warning of result.warnings) write(io, 'stdout', `  ${color.yellow('note')}     ${warning}\n`);
 
   write(io, 'stdout', `\n${color.bold('Next steps')}\n`);
-  write(io, 'stdout', `  1. ${color.dim('npx vibe-shield scan')}                 ${color.dim('# baseline your repo')}\n`);
-  write(io, 'stdout', `  2. ${color.dim('npx vibe-shield scan --fix-prompt')}   ${color.dim('# generate the fix list')}\n`);
+  write(io, 'stdout', `  1. ${color.dim('npx github:avivgerz-hue/vibe-shield scan')}                 ${color.dim('# baseline your repo')}\n`);
+  write(io, 'stdout', `  2. ${color.dim('npx github:avivgerz-hue/vibe-shield scan --fix-prompt')}   ${color.dim('# generate the fix list')}\n`);
   write(io, 'stdout', `  3. Commit the new files — your agent now audits before it says "done".\n\n`);
   return EXIT_OK;
 }
@@ -463,7 +463,7 @@ function commandRules(parsed: ParsedArgs, io: CliIo): number {
     }
     write(io, 'stdout', `  ${color.dim(rule.id.padEnd(14))} ${rule.severity.padEnd(9)} ${rule.title}\n`);
   }
-  write(io, 'stdout', `\n${color.dim('Run `npx vibe-shield explain <RULE_ID>` for the full documentation.')}\n\n`);
+  write(io, 'stdout', `\n${color.dim('Run `npx github:avivgerz-hue/vibe-shield explain <RULE_ID>` for the full documentation.')}\n\n`);
   return EXIT_OK;
 }
 

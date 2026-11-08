@@ -35,20 +35,17 @@ describe('mcp registry manifests', () => {
     expect((server.repository as { url?: string }).url).toBe('https://github.com/avivgerz-hue/vibe-shield');
     expect((server.repository as { source?: string }).source).toBe('github');
 
+    // No npm package serves this code: the bare name `vibe-shield` on the
+    // registry belongs to a different publisher, so advertising it would send
+    // every registry consumer to someone else's scanner.
     const packages = server.packages as Array<Record<string, unknown>>;
-    expect(packages.length).toBeGreaterThan(0);
-    const npm = packages[0] as Record<string, unknown>;
-    expect(npm.registryType).toBe('npm');
-    expect(npm.identifier).toBe('vibe-shield');
-    expect(npm.version).toBe(manifest.version);
-    expect((npm.transport as { type?: string }).type).toBe('stdio');
+    expect(packages).toEqual([]);
   });
 
-  it('server.json points at the mcp subcommand', () => {
-    const server = readJson<Record<string, unknown>>('server.json');
-    const pkg = (server.packages as Array<Record<string, unknown>>)[0] as Record<string, unknown>;
-    const args = pkg.packageArguments as Array<{ value?: string }>;
-    expect(args.map((arg) => arg.value)).toContain('mcp');
+  it('names the GitHub entry point wherever a command is advertised', () => {
+    const entry = 'github:avivgerz-hue/vibe-shield';
+    expect(read('glama.json')).toContain(entry);
+    expect(read('smithery.yaml')).toContain(entry);
   });
 
   it('smithery.yaml declares a stdio start command', () => {

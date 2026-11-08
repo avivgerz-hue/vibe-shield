@@ -2,7 +2,7 @@
 
 ## Security gate (vibe-shield)
 
-Before reporting a task complete, run `npx vibe-shield scan --fail-on high` and
+Before reporting a task complete, run `npx github:avivgerz-hue/vibe-shield scan --fail-on high` and
 fix every finding. Never suppress a finding to make the gate pass. If the scan
 reports an exposed credential, tell the user to rotate it at the provider.
 

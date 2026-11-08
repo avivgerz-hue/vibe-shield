@@ -735,7 +735,9 @@ describe('reporters', () => {
     expect(prompt).toMatch(/app\/api\/users\/route\.ts:\d+:\d+/);
     expect(prompt).toContain('**Required change**');
     expect(prompt).toContain('**Target shape after the fix**');
-    expect(prompt).toContain('npx vibe-shield scan --fail-on high');
+    // Must name an install source that actually serves this code — the bare
+    // npm name `vibe-shield` belongs to a different publisher.
+    expect(prompt).toContain('npx github:avivgerz-hue/vibe-shield scan --fail-on high');
     expect(prompt).toContain('- [ ] Every credential');
   });
 

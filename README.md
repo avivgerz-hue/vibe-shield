@@ -18,7 +18,7 @@ vibe-shield is a **static security scanner built for that failure mode**, plus a
 [![self-scan](https://img.shields.io/badge/self--scan-100%2F100%20A%2B-16a34a?style=flat-square)](#-it-scans-itself)
 
 ```bash
-npx vibe-shield scan
+npx github:avivgerz-hue/vibe-shield scan
 ```
 
 </div>
@@ -40,7 +40,7 @@ export async function DELETE(req: Request) {
 
 It works. It also has **three critical vulnerabilities** — no authentication, SQL injection, and an IDOR that lets the caller choose whose data they delete. Nothing in a normal review loop catches all three, and the agent reported the task as complete.
 
-`npx vibe-shield scan` catches all three in **17 milliseconds**:
+`npx github:avivgerz-hue/vibe-shield scan` catches all three in **17 milliseconds**:
 
 ```
 🛡️  vibe-shield v1.0.0 · security scan
@@ -62,15 +62,15 @@ app/api/users/route.ts
   7 files  ·  1 KiB  ·  412 files/s  ·  17 ms  ·  48 rules
 
   ⚠  3 critical findings — rotate any exposed credential before anything else.
-  Fix it      npx vibe-shield scan --fix-prompt    # writes SECURITY_PATCH_PROMPT.md for your agent
-  Explain     npx vibe-shield explain VSB-AUTH-001
-  Gate CI     npx vibe-shield scan --fail-on critical --format github
+  Fix it      npx github:avivgerz-hue/vibe-shield scan --fix-prompt    # writes SECURITY_PATCH_PROMPT.md for your agent
+  Explain     npx github:avivgerz-hue/vibe-shield explain VSB-AUTH-001
+  Gate CI     npx github:avivgerz-hue/vibe-shield scan --fail-on critical --format github
 ```
 
 Then hand the fix list to the agent that wrote the bug:
 
 ```bash
-npx vibe-shield scan --fix-prompt   # → SECURITY_PATCH_PROMPT.md
+npx github:avivgerz-hue/vibe-shield scan --fix-prompt   # → SECURITY_PATCH_PROMPT.md
 ```
 
 That file contains, for every finding: the severity, the CWE id and link, the exact `file:line`, the vulnerable snippet, the ordered remediation steps, the target code shape, and a verification command. It is written for a machine to execute and a human to audit.
@@ -81,24 +81,22 @@ That file contains, for every finding: the severity, the CWE id and link, the ex
 
 ```bash
 # 1. Scan (no install, no config, no network calls)
-npx vibe-shield scan
+npx github:avivgerz-hue/vibe-shield scan
 
 # 2. Give your agent the fix list
-npx vibe-shield scan --fix-prompt
+npx github:avivgerz-hue/vibe-shield scan --fix-prompt
 
 # 3. Install the gate permanently — skill + CI + ignore file
-npx vibe-shield init
+npx github:avivgerz-hue/vibe-shield init
 ```
 
-Prefer to run the tip of `main` before a release? Install straight from GitHub.
-The compiled CLI is committed, so this needs **no TypeScript** and starts in
-milliseconds:
+> **Why GitHub and not `npx vibe-shield`?** The name `vibe-shield` on the npm
+> registry belongs to a different project with no connection to this one. Running
+> `npx vibe-shield` installs *their* package, not this repository's. Install from
+> GitHub — the compiled CLI is committed, so it needs **no TypeScript** and starts
+> in milliseconds. A scoped npm release (`@vibefoundry/vibe-shield`) may follow.
 
-```bash
-npx github:avivgerz-hue/vibe-shield scan
-```
-
-`npx vibe-shield init` writes:
+`npx github:avivgerz-hue/vibe-shield init` writes:
 
 | File | What it does |
 | --- | --- |
@@ -131,7 +129,7 @@ vibe-shield encodes those specific shapes: 60 signatures across five families, e
 
 ## 📊 Vulnerability Coverage Matrix
 
-**48 code signatures + 12 agent-integrity signatures = 60.** Every rule has an id, a CWE, a vulnerable example, a fixed example, and ordered remediation steps — run `npx vibe-shield rules` or `npx vibe-shield explain <ID>`.
+**48 code signatures + 12 agent-integrity signatures = 60.** Every rule has an id, a CWE, a vulnerable example, a fixed example, and ordered remediation steps — run `npx github:avivgerz-hue/vibe-shield rules` or `npx github:avivgerz-hue/vibe-shield explain <ID>`.
 
 ### Client-side secret & data exposure — `VSB-CLIENT-*`
 
@@ -234,7 +232,7 @@ Claude Code, Claude Desktop, Cursor and Codex can call the scanner as a tool
 instead of shelling out and parsing console output.
 
 ```bash
-npx vibe-shield mcp          # JSON-RPC 2.0 over stdio
+npx github:avivgerz-hue/vibe-shield mcp          # JSON-RPC 2.0 over stdio
 ```
 
 Three tools:
@@ -245,14 +243,14 @@ Three tools:
 | `vibe_shield_audit_skills` | Audits `.claude/skills`, `.cursor` rules, `AGENTS.md` and MCP configs for prompt injection and exfiltration traps |
 | `vibe_shield_explain_rule` | Full CWE detail, vulnerable/fixed examples and remediation for any rule id or slug |
 
-`npx vibe-shield init` writes the config for you, merging into `.mcp.json`
+`npx github:avivgerz-hue/vibe-shield init` writes the config for you, merging into `.mcp.json`
 **without clobbering** servers you already have:
 
 ```jsonc
 {
   "mcpServers": {
     "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"] },
-    "vibe-shield": { "command": "npx", "args": ["--yes", "vibe-shield@latest", "mcp"] }
+    "vibe-shield": { "command": "npx", "args": ["--yes", "github:avivgerz-hue/vibe-shield", "mcp"] }
   }
 }
 ```
@@ -260,7 +258,7 @@ Three tools:
 Or add it by hand:
 
 ```bash
-claude mcp add vibe-shield -- npx --yes vibe-shield@latest mcp
+claude mcp add vibe-shield -- npx --yes github:avivgerz-hue/vibe-shield mcp
 ```
 
 The server is zero-dependency, writes **only** JSON-RPC to stdout, honours
@@ -275,15 +273,15 @@ a scanner that says "clean" when it read nothing is worse than no scanner.
 
 ## 🤖 Use it as an Agent Skill
 
-`npx vibe-shield init` installs the skill. Once it is in a repository, every
+`npx github:avivgerz-hue/vibe-shield init` installs the skill. Once it is in a repository, every
 agent session starts with a contract:
 
 > You are not allowed to say "done" until the code you just wrote passes a security audit.
 
 ```bash
-npx vibe-shield init                 # Claude Code + Cursor + AGENTS.md + CI
-npx vibe-shield init --agent claude  # just the skill
-npx vibe-shield init --no-workflow   # skip the GitHub Action
+npx github:avivgerz-hue/vibe-shield init                 # Claude Code + Cursor + AGENTS.md + CI
+npx github:avivgerz-hue/vibe-shield init --agent claude  # just the skill
+npx github:avivgerz-hue/vibe-shield init --no-workflow   # skip the GitHub Action
 ```
 
 **Why this works better than a prompt snippet:** it names the three commands, gives the agent a reading guide for a finding (`line:col`, rule id, message, CWE), states five hard rules (never suppress, never weaken, always rotate, report honestly, re-verify), and defines "done" as an exit code rather than an opinion.
@@ -294,7 +292,7 @@ The skill itself is [SKILL.md](./SKILL.md) — read it, it is short.
 
 ```bash
 # marketplace-style install
-npx vibe-shield init --agent claude
+npx github:avivgerz-hue/vibe-shield init --agent claude
 # → .claude/skills/vibe-shield/SKILL.md
 
 # or globally, for every project
@@ -308,7 +306,7 @@ curl -sL https://raw.githubusercontent.com/avivgerz-hue/vibe-shield/main/SKILL.m
 
 ### GitHub Actions (recommended)
 
-`npx vibe-shield init` installs a workflow that runs the scan, uploads SARIF to
+`npx github:avivgerz-hue/vibe-shield init` installs a workflow that runs the scan, uploads SARIF to
 code scanning, audits the agent surface, and fails the job:
 
 ```yaml
@@ -329,7 +327,7 @@ jobs:
           node-version: 20
 
       - name: Scan and upload SARIF
-        run: npx --yes vibe-shield@latest scan --format sarif --out vibe-shield.sarif --fail-on high
+        run: npx --yes github:avivgerz-hue/vibe-shield scan --format sarif --out vibe-shield.sarif --fail-on high
         continue-on-error: true
 
       - uses: github/codeql-action/upload-sarif@v3
@@ -339,7 +337,7 @@ jobs:
           category: vibe-shield
 
       - name: Enforce the gate
-        run: npx --yes vibe-shield@latest scan --fail-on high
+        run: npx --yes github:avivgerz-hue/vibe-shield scan --fail-on high
 ```
 
 Findings appear **inline on the pull request diff** (GitHub annotations) and in
@@ -349,11 +347,11 @@ on the line that introduced it.
 ### Any other CI
 
 ```bash
-npx vibe-shield scan --fail-on high                         # exit 1 on findings
-npx vibe-shield scan --format compact                       # one line per finding
-npx vibe-shield scan --format json > vibe-shield.json       # full report
-npx vibe-shield scan --format summary                       # JSON, counts + grade only
-npx vibe-shield scan --format github                        # workflow annotations
+npx github:avivgerz-hue/vibe-shield scan --fail-on high                         # exit 1 on findings
+npx github:avivgerz-hue/vibe-shield scan --format compact                       # one line per finding
+npx github:avivgerz-hue/vibe-shield scan --format json > vibe-shield.json       # full report
+npx github:avivgerz-hue/vibe-shield scan --format summary                       # JSON, counts + grade only
+npx github:avivgerz-hue/vibe-shield scan --format github                        # workflow annotations
 ```
 
 Exit codes: **0** clean · **1** findings at/above `--fail-on` · **2** usage error
@@ -385,7 +383,7 @@ Penalties per finding: critical −30, high −12, medium −5, low −2, info �
 This repository runs its own gate on every commit and in CI:
 
 ```console
-$ npx vibe-shield scan
+$ npx github:avivgerz-hue/vibe-shield scan
 🛡️  vibe-shield v1.0.0 · security scan
 target  /you/vibe-shield
 
@@ -395,7 +393,7 @@ target  /you/vibe-shield
 
   Nothing to fix. Keep the shield up. 🛡️
 
-$ npx vibe-shield audit-skills
+$ npx github:avivgerz-hue/vibe-shield audit-skills
 🏆 GRADE A+ — 100/100
 
   1 file  ·  6 KiB  ·  14 files/s  ·  69 ms  ·  12 rules
@@ -447,7 +445,7 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 2. **Honest.** Every finding carries the exact snippet the developer wrote. Nothing is inferred from a filename alone, and every suppression is counted, not hidden.
 3. **Composable.** `scanProject()` for the CLI, `runRulesOnFile()` for the auditor, `scoreFindings()` for anything that produces findings. The whole API is exported from `vibe-shield`.
 
-**Zero runtime dependencies.** No network calls, no telemetry, no language server, no native binaries. `npx vibe-shield scan` works offline and in an air-gapped CI runner.
+**Zero runtime dependencies.** No network calls, no telemetry, no language server, no native binaries. `npx github:avivgerz-hue/vibe-shield scan` works offline and in an air-gapped CI runner.
 
 ---
 
@@ -567,5 +565,5 @@ Three tools for the same problem: agents move fast, and something has to keep th
 | 👻 | **[ghost-qa](https://github.com/avivgerz-hue/ghost-qa)** | Autonomous headless-browser QA & self-healing verification loop — stops agents from claiming a UI works when it does not |
 
 ```bash
-npx vibe-shield init   # security gate
+npx github:avivgerz-hue/vibe-shield init   # security gate
 ```

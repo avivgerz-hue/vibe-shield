@@ -119,7 +119,7 @@ function buildPatchPrompt(result, options = {}) {
     lines.push('');
     lines.push('After each group of fixes run:');
     lines.push('');
-    lines.push(...fence('npx vibe-shield scan --fail-on high', 'bash'));
+    lines.push(...fence('npx github:avivgerz-hue/vibe-shield scan --fail-on high', 'bash'));
     lines.push('');
     lines.push('The task is complete only when this command exits `0` and every finding below is gone.');
     lines.push('');
@@ -195,7 +195,7 @@ function buildPatchPrompt(result, options = {}) {
     lines.push('## Final checklist');
     lines.push('');
     lines.push('- [ ] Every credential that appeared in this report has been rotated by the user.');
-    lines.push('- [ ] `npx vibe-shield scan --fail-on high` exits `0`.');
+    lines.push('- [ ] `npx github:avivgerz-hue/vibe-shield scan --fail-on high` exits `0`.');
     lines.push('- [ ] No `vibe-shield-disable` comments were added.');
     lines.push('- [ ] The application still builds and its tests still pass.');
     lines.push('');

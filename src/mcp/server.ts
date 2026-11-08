@@ -390,7 +390,7 @@ export async function callTool(
       const ruleId = asString(args.ruleId);
       if (!ruleId) return errorResult('`ruleId` is required, e.g. "VSB-CLIENT-001".');
       const rule = getRule(ruleId);
-      if (!rule) return errorResult(`Unknown rule "${ruleId}". Call tools/list or \`npx vibe-shield rules\` for the catalogue.`);
+      if (!rule) return errorResult(`Unknown rule "${ruleId}". Call tools/list or \`npx github:avivgerz-hue/vibe-shield rules\` for the catalogue.`);
       return explainRuleResult(rule);
     }
 
