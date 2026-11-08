@@ -1,0 +1,52 @@
+# Keep the build context to exactly what the image copies. A smaller context
+# means faster builds for directory crawlers such as Glama, and guarantees no
+# local `node_modules` leaks into the image.
+
+# Dependencies — never copied; the image runs `npm ci` against the lockfile.
+node_modules
+**/node_modules
+
+# VCS and editor noise
+.git
+.gitignore
+.gitattributes
+.github
+.vscode
+.idea
+*.swp
+
+# Source and tooling that the runtime image does not need
+src
+tests
+scripts
+coverage
+.nyc_output
+vitest.config.ts
+tsconfig.json
+eslint.config.*
+.prettierrc*
+
+# Build inputs; `dist/` is committed and is the artefact the image copies.
+*.tsbuildinfo
+
+# CI, release and agent-platform manifests — none are copied into the image
+*.yml
+*.yaml
+Dockerfile
+.dockerignore
+server.json
+glama.json
+CITATION.cff
+.mcp.json
+
+# Local scanner output and reports
+.vibe-shieldignore
+SECURITY_PATCH_PROMPT.md
+*.log
+npm-debug.log*
+.vibe-shield-cache
+.vibe-shield-local
+
+# OS cruft
+.DS_Store
+Thumbs.db

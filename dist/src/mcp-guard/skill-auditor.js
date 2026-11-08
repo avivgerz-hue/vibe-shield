@@ -77,7 +77,7 @@ exports.INVISIBLE_CODEPOINTS = [
     { regex: /[\u3164\uFFA0\u115F\u1160]/g, name: 'Hangul filler' },
 ];
 /** Files whose prose an agent will follow as instructions. */
-const INSTRUCTION_PATH_REGEX = /(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/|(?:^|\/)\.github\/copilot-instructions\.md$|(?:^|\/)(?:AGENTS|AGENT|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules|aider\.conf\.yml)$|(?:^|\/)(?:mcp|mcp_settings|claude_desktop_config)\.json$|\.mdc$/i;
+const INSTRUCTION_PATH_REGEX = /(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/|(?:^|\/)\.github\/copilot-instructions\.md$|(?:^|\/)(?:AGENTS|AGENT|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules|aider\.conf\.yml)$|(?:^|\/)(?:\.?mcp|mcp_settings|claude_desktop_config)\.json$|\.mdc$/i;
 const SHELL_SCRIPT_REGEX = /(?:^|\/)(?:\.claude|\.cursor|\.windsurf|\.cline)\/.*\.(?:sh|bash|zsh|ps1)$|(?:^|\/)scripts?\/[^/]+\.(?:sh|bash)$/i;
 const SECRET_MATERIAL_REGEX = /(?:\$\{?(?:[A-Z_]*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)[A-Z_]*)\}?|process\.env|\$ENV|\.env\b|\/\.ssh\/|\/\.aws\/|id_rsa|id_ed25519|\.npmrc|\.netrc|\.git-credentials|keychain|security find-generic-password|printenv|env\s*\|\s*|cat\s+~\/)/i;
 const SAFETY_OVERRIDE_PATTERNS = [
@@ -1111,7 +1111,7 @@ async function auditSkills(rootDir, options = {}) {
         scannedPaths: scanned,
         startedAt,
         finishedAt: new Date(finished).toISOString(),
-        version: process.env.npm_package_version ?? '1.0.0',
+        version: options.version ?? process.env.npm_package_version ?? '1.0.0',
         ruleCount: rules.length,
         suppressedCount: 0,
         notices: scanned.length ? [] : ['No agent instruction or MCP configuration files were found.'],

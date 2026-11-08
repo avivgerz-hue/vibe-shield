@@ -55,7 +55,7 @@ export const INVISIBLE_CODEPOINTS: ReadonlyArray<{ regex: RegExp; name: string }
 
 /** Files whose prose an agent will follow as instructions. */
 const INSTRUCTION_PATH_REGEX =
-  /(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/|(?:^|\/)\.github\/copilot-instructions\.md$|(?:^|\/)(?:AGENTS|AGENT|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules|aider\.conf\.yml)$|(?:^|\/)(?:mcp|mcp_settings|claude_desktop_config)\.json$|\.mdc$/i;
+  /(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/|(?:^|\/)\.github\/copilot-instructions\.md$|(?:^|\/)(?:AGENTS|AGENT|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules|aider\.conf\.yml)$|(?:^|\/)(?:\.?mcp|mcp_settings|claude_desktop_config)\.json$|\.mdc$/i;
 
 const SHELL_SCRIPT_REGEX = /(?:^|\/)(?:\.claude|\.cursor|\.windsurf|\.cline)\/.*\.(?:sh|bash|zsh|ps1)$|(?:^|\/)scripts?\/[^/]+\.(?:sh|bash)$/i;
 
@@ -1015,6 +1015,16 @@ export interface AuditOptions {
   project?: ProjectContext;
   /** Report the paths that were audited. */
   onFile?: (filePath: string) => void;
+  /**
+   * Package version to stamp on the result.
+   *
+   * Injected rather than imported: `scanner/engine` imports `scanner/rules`,
+   * which imports this module, so importing `packageVersion` from here would
+   * close a cycle (`engine -> rules -> skill-auditor -> engine`) and leave
+   * `AGENT_RULES` undefined at import time. Callers that live above the cycle
+   * resolve the version and pass it down.
+   */
+  version?: string;
 }
 
 /** Score a set of findings with the shared grading model. */
@@ -1150,7 +1160,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
     scannedPaths: scanned,
     startedAt,
     finishedAt: new Date(finished).toISOString(),
-    version: process.env.npm_package_version ?? '1.0.0',
+    version: options.version ?? process.env.npm_package_version ?? '1.0.0',
     ruleCount: rules.length,
     suppressedCount: 0,
     notices: scanned.length ? [] : ['No agent instruction or MCP configuration files were found.'],

@@ -21,6 +21,8 @@ vibe-shield is a **static security scanner built for that failure mode**, plus a
 npx github:avivgerz-hue/vibe-shield scan
 ```
 
+![vibe-shield terminal preview](./assets/hero-terminal.svg)
+
 </div>
 
 ---

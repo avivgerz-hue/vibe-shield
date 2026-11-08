@@ -82,6 +82,16 @@ export interface AuditOptions {
     project?: ProjectContext;
     /** Report the paths that were audited. */
     onFile?: (filePath: string) => void;
+    /**
+     * Package version to stamp on the result.
+     *
+     * Injected rather than imported: `scanner/engine` imports `scanner/rules`,
+     * which imports this module, so importing `packageVersion` from here would
+     * close a cycle (`engine -> rules -> skill-auditor -> engine`) and leave
+     * `AGENT_RULES` undefined at import time. Callers that live above the cycle
+     * resolve the version and pass it down.
+     */
+    version?: string;
 }
 /** Score a set of findings with the shared grading model. */
 export declare function scoreFindings(findings: readonly Finding[]): SecurityScore;

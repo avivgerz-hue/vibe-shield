@@ -217,3 +217,42 @@ describe('README badges', () => {
     );
   });
 });
+
+describe('hero terminal preview', () => {
+  it('embeds the hero image near the top of the README', () => {
+    const readme = read('README.md');
+    expect(readme).toContain('![vibe-shield terminal preview](./assets/hero-terminal.svg)');
+    // Above the fold: within the first 40 lines, under the badges.
+    const line = readme.split('\n').findIndex((l) => l.includes('hero-terminal.svg'));
+    expect(line).toBeGreaterThan(0);
+    expect(line).toBeLessThan(40);
+  });
+
+  it('ships the SVG the README points at', () => {
+    const svgPath = path.join(ROOT, 'assets', 'hero-terminal.svg');
+    expect(existsSync(svgPath), 'assets/hero-terminal.svg').toBe(true);
+    const svg = readFileSync(svgPath, 'utf8');
+    // A rasterised screenshot would not scale; this must stay a real vector.
+    expect(svg.trimStart().startsWith('<svg')).toBe(true);
+    expect(svg).toContain('viewBox');
+    expect(svg.length).toBeLessThan(200 * 1024);
+  });
+});
+
+describe('container entrypoint', () => {
+  it('ships a Dockerfile whose entrypoint is the stdio MCP server', () => {
+    const dockerfile = read('Dockerfile');
+    expect(dockerfile).toMatch(/^FROM node:2[24]-alpine/m);
+    expect(dockerfile).toContain('npm ci --omit=dev --ignore-scripts');
+    // Glama drives `initialize`/`tools/list` over stdio, so `mcp` must be the
+    // entrypoint and the prebuilt CLI must be the command.
+    expect(dockerfile).toContain('"node", "/app/dist/bin/vibe-shield.js", "mcp"');
+  });
+
+  it('keeps build inputs out of the image context', () => {
+    const ignored = read('.dockerignore').split('\n').map((l) => l.trim()).filter(Boolean);
+    for (const entry of ['node_modules', '.git', 'tests', 'coverage', 'src']) {
+      expect(ignored, entry).toContain(entry);
+    }
+  });
+});

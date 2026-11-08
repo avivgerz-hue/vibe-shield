@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="477" viewBox="0 0 900 477" role="img" aria-label="vibe-shield scanning a Next.js app, reporting a leaked NEXT_PUBLIC_ service-role key, an unguarded DELETE route and a Supabase table with no Row Level Security">
+  <defs>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#171d27"/>
+      <stop offset="100%" stop-color="#12161f"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f131b"/>
+      <stop offset="100%" stop-color="#0b0d12"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2b3546"/>
+      <stop offset="50%" stop-color="#1a212c"/>
+      <stop offset="100%" stop-color="#2b3546"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="477" rx="14" fill="#0b0d12"/>
+  <rect x="0.5" y="0.5" width="899" height="476" rx="14" fill="none" stroke="url(#edge)"/>
+  <path d="M0 14a14 14 0 0 1 14-14h872a14 14 0 0 1 14 14v22H0z" fill="url(#top)"/>
+  <line x1="0" y1="36" x2="900" y2="36" stroke="#1e2430"/>
+  <rect x="0" y="37" width="900" height="440" fill="url(#body)"/>
+  <circle cx="32" cy="41" r="5.5" fill="#ff5f57"/>
+  <circle cx="50" cy="41" r="5.5" fill="#febc2e"/>
+  <circle cx="68" cy="41" r="5.5" fill="#28c840"/>
+  <text x="96" y="46" fill="#5d6b82" font-size="12" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">~/acme-app — vibe-shield</text>
+  <line x1="0" y1="58" x2="900" y2="58" stroke="#1e2430"/>
+  <text x="26" y="84" fill="#4ade80" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">$</text>
+  <text x="41.66" y="84" fill="#eef3fb" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">npx github:avivgerz-hue/vibe-shield scan</text>
+  <text x="26" y="99" fill="#56d4dd" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">🛡️</text>
+  <text x="51.056" y="99" fill="#56d4dd" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">vibe-shield v1.1.0</text>
+  <text x="199.826" y="99" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">· security scan</text>
+  <text x="26" y="101" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">target  acme-app</text>
+  <text x="26" y="122" fill="#ff5c6c" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">💀</text>
+  <text x="41.66" y="122" fill="#ff5c6c" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">GRADE F</text>
+  <text x="96.47" y="122" fill="#ff5c6c" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"> — 10/100</text>
+  <text x="184.16600000000003" y="122" fill="#ff5c6c" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"> 3 critical</text>
+  <text x="26" y="143" fill="#eef3fb" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">app/api/users/route.ts</text>
+  <text x="41.66" y="161" fill="#ff5c6c" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">CRITICAL</text>
+  <text x="112.13" y="161" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">3:1</text>
+  <text x="159.11" y="161" fill="#ff5c6c" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">VSB-AUTH-001</text>
+  <text x="41.66" y="179" fill="#c9d3e3" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.85">Next.js App Router mutation handler has no authentication che…</text>
+  <text x="26" y="204" fill="#eef3fb" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">lib/client.ts</text>
+  <text x="41.66" y="222" fill="#ff5c6c" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">CRITICAL</text>
+  <text x="112.13" y="222" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">1:27</text>
+  <text x="159.11" y="222" fill="#ff5c6c" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">VSB-CLIENT-001</text>
+  <text x="41.66" y="240" fill="#c9d3e3" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.85">Server-only secret exposed through a public environment prefix</text>
+  <text x="26" y="265" fill="#eef3fb" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">migrations/001_init.sql</text>
+  <text x="41.66" y="283" fill="#ff5c6c" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">CRITICAL</text>
+  <text x="112.13" y="283" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">1:1</text>
+  <text x="159.11" y="283" fill="#ff5c6c" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">VSB-DB-001</text>
+  <text x="41.66" y="301" fill="#c9d3e3" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.85">Table created without Row Level Security enabled</text>
+  <text x="26" y="328" fill="#5d6b82" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.9">4 files  ·  59 ms  ·  48 rules</text>
+  <line x1="26" y1="336" x2="874" y2="336" stroke="#1e2430" stroke-dasharray="3 4"/>
+  <text x="26" y="357" fill="#4ade80" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">$</text>
+  <text x="41.66" y="357" fill="#eef3fb" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">npx github:avivgerz-hue/vibe-shield audit-skills</text>
+  <text x="26" y="380" fill="#56d4dd" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">🛡️</text>
+  <text x="51.056" y="380" fill="#56d4dd" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">agent surface audit</text>
+  <text x="207.656" y="380" fill="#ffa657" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">GRADE F — 29/100</text>
+  <text x="41.66" y="401" fill="#ffa657" font-size="13" font-weight="600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">VSB-AGENT-006</text>
+  <text x="182.6" y="401" fill="#ffa657" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">CRITICAL</text>
+  <text x="41.66" y="419" fill="#c9d3e3" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.85">Instruction disables the agent's safety or approval behaviour</text>
+  <text x="26" y="447" fill="#ffa657" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">⚠</text>
+  <text x="41.66" y="447" fill="#ffa657" font-size="13" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">3 critical findings</text>
+  <text x="206.09" y="447" fill="#c9d3e3" font-size="13" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" opacity="0.85">— rotate the exposed key before anything else.</text>
+  <text x="26" y="468" fill="#5d6b82" font-size="12" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">Fix it</text>
+  <text x="88.64" y="468" fill="#56d4dd" font-size="12" font-weight="400" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">vibe-shield scan --fix-prompt</text>
+</svg>

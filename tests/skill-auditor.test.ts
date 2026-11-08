@@ -496,3 +496,31 @@ describe('robustness', () => {
     }
   });
 });
+
+describe('audit result version', () => {
+  // `audit-skills` used to stamp a hard-coded "1.0.0" on every result because
+  // the auditor cannot import `packageVersion()` from scanner/engine without
+  // closing the engine -> rules -> skill-auditor -> engine import cycle. The
+  // version is now injected by the CLI, so an audit reports the same version
+  // the rest of the tool does.
+  it('stamps the version it is given', async () => {
+    const project = await makeProject({ 'AGENTS.md': '# Agents\n' });
+    try {
+      const result = await auditSkills(project.root, { version: '9.9.9' });
+      expect(result.version).toBe('9.9.9');
+    } finally {
+      project.cleanup();
+    }
+  });
+
+  it('never hard-codes a stale 1.0.0 when a version is supplied', async () => {
+    const project = await makeProject({ 'AGENTS.md': '# Agents\n' });
+    try {
+      const result = await auditSkills(project.root, { version: '1.1.0' });
+      expect(result.version).toBe('1.1.0');
+      expect(result.version).not.toBe('1.0.0');
+    } finally {
+      project.cleanup();
+    }
+  });
+});

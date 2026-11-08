@@ -345,6 +345,7 @@ async function commandAuditSkills(parsed, io) {
     }
     const result = await (0, skill_auditor_1.auditSkills)(io.cwd, {
         paths: parsed.positionals.length ? parsed.positionals : undefined,
+        version: await (0, engine_1.packageVersion)(),
     });
     await emitReport(result, io, {
         fixPrompt: flagBool(parsed, 'fix-prompt'),

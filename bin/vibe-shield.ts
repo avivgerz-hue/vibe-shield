@@ -369,6 +369,7 @@ async function commandAuditSkills(parsed: ParsedArgs, io: CliIo): Promise<number
 
   const result = await auditSkills(io.cwd, {
     paths: parsed.positionals.length ? parsed.positionals : undefined,
+    version: await packageVersion(),
   });
 
   await emitReport(result, io, {
