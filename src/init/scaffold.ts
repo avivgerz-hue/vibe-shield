@@ -43,6 +43,13 @@ export interface InitOptions {
   dryRun?: boolean;
   /** Pin a specific version in the workflow (default `latest`). */
   version?: string;
+  /**
+   * Commit to pin the `.mcp.json` entry to. Resolved from the installed package
+   * when omitted; see `resolveInstallRev`.
+   */
+  rev?: string | null;
+  /** Environment to read the revision override from. Defaults to `process.env`. */
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface InitResult {
@@ -53,6 +60,8 @@ export interface InitResult {
   blocked: string[];
   warnings: string[];
 }
+
+import { SELF_GITHUB_SPEC } from '../scanner/rules/shared';
 
 const BANNER = '<!-- Managed by vibe-shield. Edit freely; `npx github:avivgerz-hue/vibe-shield init --force` regenerates this file. -->';
 
@@ -141,7 +150,7 @@ When you add or modify a skill, rule file, MCP server or instruction file, also 
 npx github:avivgerz-hue/vibe-shield audit-skills
 \`\`\`
 
-Twelve \`VSB-AGENT-*\` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), \`curl\`/\`wget\` exfiltration of environment variables, credential-harvesting instructions (\`.env\`, \`~/.ssh\`, \`~/.aws\`), unpinned or remote MCP servers, literal tokens in an \`env\` block, safety-override language, over-broad tool permissions, base64 \`eval\` payloads, remote-instruction fetching, wildcard \`allowed-tools\`, and shell injection in skill scripts.
+Twelve \`VSB-AGENT-*\` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), \`curl\`/\`wget\` exfiltration of environment variables, credential-harvesting instructions (\`.env\`, \`~/.ssh\`, \`~/.aws\`), registry-tag or remote MCP servers, literal tokens in an \`env\` block, safety-override language, over-broad tool permissions, base64 \`eval\` payloads, remote-instruction fetching, wildcard \`allowed-tools\`, and shell injection in skill scripts.
 
 Each finding carries a \`triage\` field: \`block\` means refuse and escalate, \`review\` means ask the user, \`report\` means mention it and continue. Do not blanket-refuse a repository because a rule fired — read the triage.
 
@@ -221,11 +230,23 @@ export const MCP_SERVER_KEY = 'vibe-shield';
  *
  * `npx` is used rather than a local path so the config keeps working when the
  * project is cloned elsewhere or the package is upgraded.
+ *
+ * The spec carries a `#<commit>` pin when `init` can determine one. A bare
+ * `github:owner/repo` re-resolves to the default branch head on every fresh
+ * install, so a mixed commit could change what runs the next time the server
+ * starts. Pin the commit that wrote this file and upgrades become explicit
+ * (`init --force` rewrites it).
  */
-export const MCP_SERVER_ENTRY = {
-  command: 'npx',
-  args: ['--yes', 'github:avivgerz-hue/vibe-shield', 'mcp'],
-} as const;
+export const MCP_SERVER_SPEC = SELF_GITHUB_SPEC;
+
+/** Build the `.mcp.json` entry, pinned to `rev` when one is known. */
+export function mcpServerEntry(rev?: string | null): { command: string; args: string[] } {
+  const spec = rev ? `${MCP_SERVER_SPEC}#${rev}` : MCP_SERVER_SPEC;
+  return { command: 'npx', args: ['--yes', spec, 'mcp'] };
+}
+
+/** The unpinned entry, kept for callers that have no commit available. */
+export const MCP_SERVER_ENTRY = mcpServerEntry();
 
 /**
  * Merge the vibe-shield server into an existing `.mcp.json` without disturbing
@@ -236,13 +257,61 @@ export const MCP_SERVER_ENTRY = {
  * a malformed file is reported rather than overwritten, because silently
  * rewriting someone's MCP config could break every server they run.
  */
+/**
+ * Find the commit of the running install, so `.mcp.json` can pin it.
+ *
+ * Deliberately conservative: returns `null` rather than guessing, because a
+ * wrong pin is worse than no pin (it would silently freeze the server on an
+ * unrelated commit). The revision is only derivable when the CLI is running
+ * from inside an npm install of this package, which is the `npx github:` case.
+ *
+ * Order:
+ *   1. `VIBE_SHIELD_REV` — an explicit override, used by tests and CI.
+ *   2. The `resolved` field npm records in the *parent* project's lockfile.
+ *   3. `/app/.rev` — written into the container image at build time.
+ */
+export async function resolveInstallRev(rootDir?: string, env: NodeJS.ProcessEnv = process.env): Promise<string | null> {
+  const explicit = env.VIBE_SHIELD_REV?.trim();
+  if (explicit) return explicit;
+
+  const shaPattern = /(?:[?#]([0-9a-f]{40}))\b/i;
+
+  // A lockfile one or two directories above this file, in an npm install.
+  let dir = __dirname;
+  for (let depth = 0; depth < 4; depth += 1) {
+    for (const name of ['package-lock.json', 'npm-shrinkwrap.json']) {
+      try {
+        const raw = await fs.readFile(path.join(dir, name), 'utf8');
+        const match = raw.match(shaPattern);
+        if (match?.[1]) return match[1];
+      } catch {
+        // Keep walking.
+      }
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  try {
+    const rev = (await fs.readFile('/app/.rev', 'utf8')).trim();
+    if (/^[0-9a-f]{40}$/i.test(rev)) return rev;
+  } catch {
+    // Not in the container image.
+  }
+
+  void rootDir;
+  return null;
+}
+
 export function mergeMcpConfig(
   existing: string | null,
-  options: { force?: boolean } = {},
+  options: { force?: boolean; rev?: string | null } = {},
 ): { contents: string; changed: boolean; error?: string } {
+  const entry = mcpServerEntry(options.rev);
   if (existing === null || existing.trim() === '') {
     return {
-      contents: `${JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: MCP_SERVER_ENTRY } }, null, 2)}\n`,
+      contents: `${JSON.stringify({ mcpServers: { [MCP_SERVER_KEY]: entry } }, null, 2)}\n`,
       changed: true,
     };
   }
@@ -275,7 +344,7 @@ export function mergeMcpConfig(
     return { contents: existing, changed: false };
   }
 
-  const next = { ...config, mcpServers: { ...table, [MCP_SERVER_KEY]: MCP_SERVER_ENTRY } };
+  const next = { ...config, mcpServers: { ...table, [MCP_SERVER_KEY]: entry } };
   return { contents: `${JSON.stringify(next, null, 2)}\n`, changed: true };
 }
 
@@ -437,6 +506,7 @@ const exists = async (file: string): Promise<boolean> => {
 export async function installScaffold(options: InitOptions): Promise<InitResult> {
   const rootDir = path.resolve(options.rootDir);
   const result: InitResult = { written: [], appended: [], skipped: [], blocked: [], warnings: [] };
+  const resolvedRev = options.rev === undefined ? await resolveInstallRev(rootDir, options.env) : options.rev;
   const files = buildScaffold(options);
 
   for (const file of files) {
@@ -476,7 +546,7 @@ export async function installScaffold(options: InitOptions): Promise<InitResult>
           existing = null;
         }
       }
-      const merged = mergeMcpConfig(existing, { force: options.force });
+      const merged = mergeMcpConfig(existing, { force: options.force, rev: resolvedRev });
       if (merged.error) {
         // Not a `skipped` entry: `--force` cannot repair invalid JSON, so the
         // summary must not suggest it can.

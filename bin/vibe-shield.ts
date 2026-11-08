@@ -397,6 +397,7 @@ async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
     workflow: !flagBool(parsed, 'no-workflow'),
     force: flagBool(parsed, 'force'),
     dryRun: false,
+    env: io.env,
   });
 
   const color = createColorizer(io.stdout);

@@ -215,7 +215,7 @@ vibe-shield encodes those specific shapes: 60 signatures across five families, e
 | `VSB-AGENT-001` | zero-width, bidi-override, Unicode-tag characters hiding instructions | CWE-74 | critical |
 | `VSB-AGENT-002` | `curl`/`wget`/`nc` exfiltrating env vars or `.env` | CWE-200 | critical |
 | `VSB-AGENT-003` | instructions to read `.env`, `~/.ssh`, `~/.aws/credentials`, `id_rsa`, keychain | [CWE-522](https://cwe.mitre.org/data/definitions/522.html) | critical |
-| `VSB-AGENT-004` | unpinned `npx -y`/`uvx`, remote MCP URL, `curl \| sh` install | [CWE-829](https://cwe.mitre.org/data/definitions/829.html) | high |
+| `VSB-AGENT-004` | registry-tag `npx -y`/`uvx`, remote MCP URL, `curl \| sh` install (git installs such as `github:owner/repo` are not flagged: they resolve to a commit, not a mutable tag) | [CWE-829](https://cwe.mitre.org/data/definitions/829.html) | high |
 | `VSB-AGENT-005` | literal credentials in an `env` block, or `"*": "*"` env forwarding | [CWE-526](https://cwe.mitre.org/data/definitions/526.html) | critical/high |
 | `VSB-AGENT-006` | "ignore previous instructions", "do not tell the user", "auto-approve", "skip confirmation" | CWE-74 | critical |
 | `VSB-AGENT-007` | `Bash(*)`, `Write(*)`, `autoApprove: ["*"]`, `dangerouslySkipPermissions` | CWE-284 | high |

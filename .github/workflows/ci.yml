@@ -103,6 +103,106 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  docker-mcp:
+    name: Docker MCP handshake
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      # The image copies the committed `dist/` rather than compiling, so a stale
+      # build would ship stale code inside a green pipeline.
+      - name: Committed dist/ matches the source
+        run: git diff --exit-code -- dist
+
+      - name: Build the image
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg "VIBE_SHIELD_REV=${{ github.sha }}" \
+            --tag vibe-shield:mcp .
+
+      - name: Prepare the handshake requests
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/requests.jsonl" <<'JSON'
+          {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"1.0.0"}}}
+          {"jsonrpc":"2.0","method":"notifications/initialized"}
+          {"jsonrpc":"2.0","id":2,"method":"tools/list"}
+          JSON
+
+      # `-i` keeps stdin attached — stdio transport is the whole point.
+      # `--read-only` proves the server never writes to its own filesystem.
+      - name: Drive initialize + tools/list over stdio
+        run: |
+          set -euo pipefail
+          docker run --rm -i --read-only --tmpfs /tmp vibe-shield:mcp \
+            < "$RUNNER_TEMP/requests.jsonl" > "$RUNNER_TEMP/responses.jsonl" 2> "$RUNNER_TEMP/stderr.txt"
+
+          echo "--- container stderr ---"
+          cat "$RUNNER_TEMP/stderr.txt"
+          echo "--- container stdout ---"
+          cat "$RUNNER_TEMP/responses.jsonl"
+
+          node - "$RUNNER_TEMP/responses.jsonl" <<'NODE'
+          const fs = require('node:fs');
+          const frames = fs.readFileSync(process.argv[2], 'utf8')
+            .split('\n')
+            .filter((line) => line.trim())
+            .map((line, index) => {
+              try {
+                return JSON.parse(line);
+              } catch {
+                // A stray log line here corrupts a real client session.
+                throw new Error(`stdout line ${index + 1} is not JSON: ${line.slice(0, 80)}`);
+              }
+            });
+
+          if (frames.length < 2) throw new Error(`expected 2 JSON-RPC frames, got ${frames.length}`);
+
+          const init = frames.find((frame) => frame.id === 1);
+          if (!init) throw new Error('no response to initialize');
+          if (init.error) throw new Error(`initialize returned an error: ${JSON.stringify(init.error)}`);
+
+          const info = init.result.serverInfo;
+          if (!info || !info.name) throw new Error('serverInfo.name missing');
+          if (!/^\d+\.\d+\.\d+/.test(info.version)) {
+            throw new Error(`serverInfo.version is not semver: ${JSON.stringify(info.version)}`);
+          }
+
+          const list = frames.find((frame) => frame.id === 2);
+          if (!list) throw new Error('no response to tools/list');
+          if (list.error) throw new Error(`tools/list returned an error: ${JSON.stringify(list.error)}`);
+
+          const tools = list.result.tools;
+          if (!Array.isArray(tools) || tools.length !== 3) {
+            throw new Error(`expected 3 tools, got ${Array.isArray(tools) ? tools.length : typeof tools}`);
+          }
+          for (const tool of tools) {
+            if (!tool.name || !tool.inputSchema || tool.inputSchema.type !== 'object') {
+              throw new Error(`tool malformed: ${JSON.stringify(tool).slice(0, 120)}`);
+            }
+          }
+
+          console.log(`\nOK: ${info.name} v${info.version} exposed ${tools.length} tools over stdio`);
+          NODE
+
+      - name: Report the image size
+        run: |
+          docker image inspect vibe-shield:mcp --format '{{.Size}}' \
+            | awk '{printf "image size: %.1f MB\n", $1/1024/1024}'
+
   publish:
     name: Publish to npm
     if: startsWith(github.ref, 'refs/tags/v')

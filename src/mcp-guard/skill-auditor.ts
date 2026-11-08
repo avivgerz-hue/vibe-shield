@@ -19,7 +19,7 @@ import { findSecrets } from '../secrets/patterns';
 import { createFileContext, detectProject, tolerantJsonParse } from '../scanner/context';
 import { IgnoreMatcher } from '../scanner/gitignore';
 import { defineRule, fileHit } from '../scanner/rules/helpers';
-import { CWES } from '../scanner/rules/shared';
+import { CWES, isGitInstallArg } from '../scanner/rules/shared';
 import {
   GRADE_THRESHOLDS,
   SEVERITY_SCORE_CEILING,
@@ -457,7 +457,14 @@ const unpinnedMcpServer: Rule = defineRule({
         continue;
       }
       const pinnedNpx = /\bnpx\b/.test(joined) && args.some((arg) => /@\d+\.\d+\.\d+|@\^?\d|@latest|@next/.test(arg));
-      const unpinnedNpx = /\bnpx\b/.test(joined) && !pinnedNpx;
+      // A `github:owner/repo` spec installs from a git host and resolves to a
+      // commit SHA rather than a mutable registry tag. That is a materially
+      // different risk from `npx -y some-server` (which runs whatever the
+      // registry published today), so git installs are not counted as unpinned
+      // here — including the entry `init` writes. Pinning `#<sha>` is still the
+      // stronger posture and is recommended when the source is third-party.
+      const gitInstall = /\bnpx\b/.test(joined) && args.some(isGitInstallArg);
+      const unpinnedNpx = /\bnpx\b/.test(joined) && !pinnedNpx && !gitInstall;
       const unpinnedUvx = /\buvx\b/.test(joined) && !args.some((arg) => /==\d/.test(arg));
       const curlPipe = /\b(?:curl|wget)\b[\s\S]{0,120}\|\s*(?:sudo\s+)?(?:ba)?sh/.test(joined);
       if (curlPipe || unpinnedNpx || unpinnedUvx) {
@@ -924,7 +931,7 @@ const AGENT_DIRS = new Set(['.claude', '.cursor', '.windsurf', '.cline', '.conti
 
 /** File names/suffixes the auditor visits. */
 const AUDITOR_FILE_REGEX =
-  /(?:^|\/)(?:AGENTS?|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules)$|\.mdc$|(?:^|\/)(?:mcp|mcp_settings|claude_desktop_config)\.json$|(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/.*\.(?:md|mdc|json|ya?ml|txt|sh|bash|zsh|ps1|[cm]?[jt]s)$/i;
+  /(?:^|\/)(?:AGENTS?|CLAUDE|GEMINI|SKILL)\.md$|(?:^|\/)\.(?:cursorrules|windsurfrules|clinerules|roorules)$|\.mdc$|(?:^|\/)(?:\.?mcp|mcp_settings|claude_desktop_config)\.json$|(?:^|\/)\.(?:claude|cursor|windsurf|cline|continue)\/.*\.(?:md|mdc|json|ya?ml|txt|sh|bash|zsh|ps1|[cm]?[jt]s)$/i;
 
 /**
  * Locate every agent-instruction / MCP file under `rootDir`.

@@ -7,10 +7,11 @@
  * a `FileContext` and is unit-tested through the rules that consume it.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.confident = exports.handlerBody = exports.checksRole = exports.isBrowserFile = exports.verifiesAuth = exports.LOGIC_SKIP_FLAGS = exports.isSchemaFile = exports.isDataFile = exports.SERVER_CODE_LANGUAGES = exports.JS_LANGUAGES = exports.CWES = exports.cwe = void 0;
+exports.SELF_INSTALL_SPECS = exports.SELF_GITHUB_SPEC = exports.confident = exports.handlerBody = exports.checksRole = exports.isBrowserFile = exports.verifiesAuth = exports.LOGIC_SKIP_FLAGS = exports.isSchemaFile = exports.isDataFile = exports.SERVER_CODE_LANGUAGES = exports.JS_LANGUAGES = exports.CWES = exports.cwe = void 0;
 exports.isApplicationCode = isApplicationCode;
 exports.offsetOf = offsetOf;
 exports.escalate = escalate;
+exports.isGitInstallArg = isGitInstallArg;
 const lexicon_1 = require("../lexicon");
 const text_1 = require("../text");
 /** Build a `Cwe` record from an id and its short MITRE name. */
@@ -130,3 +131,31 @@ function escalate(base, candidate) {
 /** Confidence bump used when a project-level signal corroborates a hit. */
 const confident = (value, boost = false) => boost ? 'high' : value;
 exports.confident = confident;
+/**
+ * This repository's canonical `github:` install coordinate.
+ *
+ * Single source of truth: `init` writes it into `.mcp.json`, and the auditor
+ * recognises it there. Keeping one constant means the two can never drift.
+ */
+exports.SELF_GITHUB_SPEC = 'github:avivgerz-hue/vibe-shield';
+/** First-party install specs the auditor vouches for without a `@sha`. */
+exports.SELF_INSTALL_SPECS = [exports.SELF_GITHUB_SPEC];
+/**
+ * Recognise an `npx` argument that installs from a git host rather than from a
+ * mutable registry tag.
+ *
+ * `github:owner/repo`, `gitlab:…`, `bitbucket:…` and explicit git URLs resolve
+ * to a commit SHA instead of a semver tag, so they are not the "whatever the
+ * registry published five minutes ago" risk that VSB-AGENT-004 exists to catch.
+ *
+ * This does **not** mean the pin is immutable: without a lockfile entry npm
+ * re-resolves a bare `github:owner/repo` to the default branch head on every
+ * fresh install. Callers are told to pin `#<sha>` for that. The narrower claim
+ * — that it is not a mutable registry tag — is what is checkable here.
+ */
+function isGitInstallArg(arg) {
+    return (/^(?:github|gitlab|bitbucket):[^/@\s]+\/[^/\s@]+(?:#[^\s]+)?$/i.test(arg) ||
+        /^(?:git\+)?(?:https?|ssh|git):\/\/[^\s]+\.git(?:#[^\s]+)?$/i.test(arg) ||
+        /^git@[^\s:]+:[^\s]+\.git(?:#[^\s]+)?$/i.test(arg) ||
+        /^(?:git\+)?(?:github|gitlab|bitbucket):[^\s]+$/i.test(arg));
+}

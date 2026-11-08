@@ -369,6 +369,7 @@ async function commandInit(parsed, io) {
         workflow: !flagBool(parsed, 'no-workflow'),
         force: flagBool(parsed, 'force'),
         dryRun: false,
+        env: io.env,
     });
     const color = (0, console_reporter_1.createColorizer)(io.stdout);
     if (flagBool(parsed, 'no-color'))

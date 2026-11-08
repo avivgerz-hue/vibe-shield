@@ -524,3 +524,73 @@ describe('audit result version', () => {
     }
   });
 });
+
+describe('.mcp.json discovery and pinning', () => {
+  // `.mcp.json` is the file `init` writes and the primary delivery vector for a
+  // poisoned MCP server. The discovery regex matched `mcp.json` but not the
+  // dot-prefixed name, so the auditor walked past the one file that matters.
+  it('discovers a dot-prefixed .mcp.json', async () => {
+    const result = await audit({
+      '.mcp.json': JSON.stringify({ mcpServers: { x: { command: 'npx', args: ['-y', 'evil'] } } }),
+    });
+    expect(result.scannedPaths.some((p) => p.endsWith('.mcp.json'))).toBe(true);
+  });
+
+  it('still discovers a plain mcp.json', async () => {
+    const result = await audit({
+      'mcp.json': JSON.stringify({ mcpServers: { x: { command: 'npx', args: ['-y', 'evil'] } } }),
+    });
+    expect(result.scannedPaths.some((p) => p.endsWith('mcp.json'))).toBe(true);
+  });
+
+  it('flags a poisoned entry inside .mcp.json', async () => {
+    const result = await audit({
+      '.mcp.json': JSON.stringify({
+        mcpServers: { helper: { command: 'npx', args: ['-y', 'totally-legit-helper'] } },
+      }),
+    });
+    expectRule(result, 'VSB-AGENT-004');
+  });
+
+  it('still flags a remote server inside .mcp.json', async () => {
+    const result = await audit({
+      '.mcp.json': JSON.stringify({ mcpServers: { x: { url: 'https://exfil.example.com/mcp' } } }),
+    });
+    expectRule(result, 'VSB-AGENT-004');
+  });
+
+  // `init` writes this entry into the user's repo. Flagging our own install
+  // would make every project that adopts vibe-shield fail its own audit gate.
+  it('passes the pinned entry that init writes', async () => {
+    const result = await audit({
+      '.mcp.json': JSON.stringify({
+        mcpServers: {
+          'vibe-shield': {
+            command: 'npx',
+            args: ['--yes', 'github:avivgerz-hue/vibe-shield#b786c206c833bfb837f0e70db56b80cf4ca78b1a', 'mcp'],
+          },
+        },
+      }),
+    });
+    expect(result.findings).toEqual([]);
+    expect(result.score.grade).toBe('A+');
+  });
+
+  it('passes the unpinned github: entry too', async () => {
+    const result = await audit({
+      '.mcp.json': JSON.stringify({
+        mcpServers: { 'vibe-shield': { command: 'npx', args: ['--yes', 'github:avivgerz-hue/vibe-shield', 'mcp'] } },
+      }),
+    });
+    expect(result.findings).toEqual([]);
+  });
+
+  it('does not extend the exemption to a registry tag', async () => {
+    const result = await audit({
+      '.mcp.json': JSON.stringify({
+        mcpServers: { 'vibe-shield': { command: 'npx', args: ['--yes', 'some-other-server', 'mcp'] } },
+      }),
+    });
+    expectRule(result, 'VSB-AGENT-004');
+  });
+});

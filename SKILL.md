@@ -79,7 +79,7 @@ When you add or modify a skill, rule file, MCP server or instruction file, also 
 npx github:avivgerz-hue/vibe-shield audit-skills
 ```
 
-Twelve `VSB-AGENT-*` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), `curl`/`wget` exfiltration of environment variables, credential-harvesting instructions (`.env`, `~/.ssh`, `~/.aws`), unpinned or remote MCP servers, literal tokens in an `env` block, safety-override language, over-broad tool permissions, base64 `eval` payloads, remote-instruction fetching, wildcard `allowed-tools`, and shell injection in skill scripts.
+Twelve `VSB-AGENT-*` rules check for hidden Unicode (zero-width and bidi characters used to smuggle instructions past review), `curl`/`wget` exfiltration of environment variables, credential-harvesting instructions (`.env`, `~/.ssh`, `~/.aws`), registry-tag or remote MCP servers, literal tokens in an `env` block, safety-override language, over-broad tool permissions, base64 `eval` payloads, remote-instruction fetching, wildcard `allowed-tools`, and shell injection in skill scripts.
 
 Each finding carries a `triage` field: `block` means refuse and escalate, `review` means ask the user, `report` means mention it and continue. Do not blanket-refuse a repository because a rule fired — read the triage.
 

@@ -45,6 +45,13 @@ COPY dist ./dist
 # Documentation surfaced by MCP clients and the agent skill.
 COPY SKILL.md README.md SECURITY.md LICENSE ./
 
+# Record the commit this image was built from, so `init` running inside the
+# container can write a `.mcp.json` entry pinned to an immutable revision
+# instead of a moving `github:owner/repo` ref. Optional: the build must not
+# fail when the caller does not supply it.
+ARG VIBE_SHIELD_REV=
+RUN if [ -n "$VIBE_SHIELD_REV" ]; then printf '%s\n' "$VIBE_SHIELD_REV" > /app/.rev; fi
+
 # Run unprivileged. node:22-alpine ships a `node` user (uid 1000) for this.
 USER node
 

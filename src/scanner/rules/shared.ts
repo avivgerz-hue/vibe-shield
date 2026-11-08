@@ -141,3 +141,36 @@ export function escalate(base: Severity, candidate: Severity): Severity {
 /** Confidence bump used when a project-level signal corroborates a hit. */
 export const confident = (value: Confidence, boost = false): Confidence =>
   boost ? 'high' : value;
+
+/**
+ * This repository's canonical `github:` install coordinate.
+ *
+ * Single source of truth: `init` writes it into `.mcp.json`, and the auditor
+ * recognises it there. Keeping one constant means the two can never drift.
+ */
+export const SELF_GITHUB_SPEC = 'github:avivgerz-hue/vibe-shield';
+
+/** First-party install specs the auditor vouches for without a `@sha`. */
+export const SELF_INSTALL_SPECS: readonly string[] = [SELF_GITHUB_SPEC];
+
+/**
+ * Recognise an `npx` argument that installs from a git host rather than from a
+ * mutable registry tag.
+ *
+ * `github:owner/repo`, `gitlab:…`, `bitbucket:…` and explicit git URLs resolve
+ * to a commit SHA instead of a semver tag, so they are not the "whatever the
+ * registry published five minutes ago" risk that VSB-AGENT-004 exists to catch.
+ *
+ * This does **not** mean the pin is immutable: without a lockfile entry npm
+ * re-resolves a bare `github:owner/repo` to the default branch head on every
+ * fresh install. Callers are told to pin `#<sha>` for that. The narrower claim
+ * — that it is not a mutable registry tag — is what is checkable here.
+ */
+export function isGitInstallArg(arg: string): boolean {
+  return (
+    /^(?:github|gitlab|bitbucket):[^/@\s]+\/[^/\s@]+(?:#[^\s]+)?$/i.test(arg) ||
+    /^(?:git\+)?(?:https?|ssh|git):\/\/[^\s]+\.git(?:#[^\s]+)?$/i.test(arg) ||
+    /^git@[^\s:]+:[^\s]+\.git(?:#[^\s]+)?$/i.test(arg) ||
+    /^(?:git\+)?(?:github|gitlab|bitbucket):[^\s]+$/i.test(arg)
+  );
+}

@@ -409,6 +409,29 @@ describe('init', () => {
       const io = makeIo(project.root);
       expect(await run(['audit-skills'], io)).toBe(0);
       expect(io.out()).toContain('A+');
+      // The gate must actually have read the `.mcp.json` that init just wrote,
+      // not skipped it: an A+ on a file the auditor never opened is worthless.
+      const jsonIo = makeIo(project.root);
+      expect(await run(['audit-skills', '--format', 'json'], jsonIo)).toBe(0);
+      const audit = JSON.parse(jsonIo.out()) as { scannedPaths: string[] };
+      expect(audit.scannedPaths.some((file) => file.endsWith('.mcp.json'))).toBe(true);
+    } finally {
+      project.cleanup();
+    }
+  });
+
+  it('writes a pinned .mcp.json that survives the audit', async () => {
+    const project = makeProject({ 'package.json': JSON.stringify({ name: 'x' }) });
+    try {
+      const rev = 'b786c206c833bfb837f0e70db56b80cf4ca78b1a';
+      expect(await run(['init', '--agent', 'claude'], makeIo(project.root, { VIBE_SHIELD_REV: rev }))).toBe(0);
+      const config = JSON.parse(readFileSync(path.join(project.root, '.mcp.json'), 'utf8'));
+      // An immutable pin, so a fresh `npx` cannot silently resolve to a
+      // different commit than the one that wrote this file.
+      expect(config.mcpServers['vibe-shield'].args).toContain(`github:avivgerz-hue/vibe-shield#${rev}`);
+      const io = makeIo(project.root);
+      expect(await run(['audit-skills'], io)).toBe(0);
+      expect(io.out()).toContain('A+');
     } finally {
       project.cleanup();
     }
