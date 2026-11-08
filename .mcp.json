@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vibe-shield": {
+      "command": "npx",
+      "args": ["--yes", "@vibefoundry/vibe-shield@2.0.0", "mcp"]
+    }
+  }
+}

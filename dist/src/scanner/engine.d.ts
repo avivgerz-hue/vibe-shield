@@ -107,7 +107,7 @@ export declare function applySuppressions(findings: readonly Finding[], parsed: 
 /** Turn a finding list into a 0-100 score with an A+ → F grade. */
 export declare function scoreFindings(findings: readonly Finding[]): SecurityScore;
 export declare const CACHE_FILE_NAME = ".vibe-shield-cache.json";
-export declare const CACHE_VERSION = 1;
+export declare const CACHE_VERSION = 2;
 /** Content hash used as the cache key for one file. */
 export declare const contentHash: (content: string) => string;
 /**
@@ -115,8 +115,7 @@ export declare const contentHash: (content: string) => string;
  * Exported because the MCP auditor reuses it: two scanners, one rule contract.
  */
 export declare function runRulesOnFile(ctx: FileContext, rules: readonly Rule[]): RuleHit[];
-/** Package version, resolved once from the nearest package.json. */
-export declare function packageVersion(): Promise<string>;
+export { packageVersion } from './version';
 /**
  * Scan a project. This is the one function the CLI, the tests and any embedding
  * application call; everything else in this module is an implementation detail.

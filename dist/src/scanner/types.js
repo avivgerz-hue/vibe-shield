@@ -23,6 +23,8 @@ exports.RULE_CATEGORIES = [
     'database-exposure',
     'ai-vulnerabilities',
     'secret-entropy',
+    'infrastructure',
+    'dependencies',
     'agent-integrity',
 ];
 exports.CATEGORY_TITLES = {
@@ -31,6 +33,8 @@ exports.CATEGORY_TITLES = {
     'database-exposure': 'Database exposure (RLS, SQLi, service role)',
     'ai-vulnerabilities': 'AI / LLM & classic web vulnerabilities',
     'secret-entropy': 'Hardcoded credentials & high-entropy secrets',
+    infrastructure: 'Infrastructure, headers & containers',
+    dependencies: 'Supply-chain & dependency hygiene',
     'agent-integrity': 'Agent skill & MCP poisoning',
 };
 /** Relative severity weight used by the scoring model. */

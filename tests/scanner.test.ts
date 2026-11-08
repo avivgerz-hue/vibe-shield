@@ -405,6 +405,7 @@ describe('suppressions', () => {
       confidence: 'high',
       cwe: { id: 'CWE-1', name: 'x', url: '' },
       filePath: 'a.ts',
+      file: 'a.ts',
       absolutePath: '/a.ts',
       line,
       column: 1,
@@ -437,6 +438,7 @@ describe('scoring', () => {
     confidence: 'high',
     cwe: { id: 'CWE-1', name: 'x', url: '' },
     filePath: 'a.ts',
+      file: 'a.ts',
     absolutePath: '/a.ts',
     line: 1,
     column: 1,
@@ -734,7 +736,7 @@ describe('reporters', () => {
     expect(prompt).toContain('CWE-');
     expect(prompt).toMatch(/app\/api\/users\/route\.ts:\d+:\d+/);
     expect(prompt).toContain('**Required change**');
-    expect(prompt).toContain('**Target shape after the fix**');
+    expect(prompt).toContain('**Illustrative remediation example (adapt to the project)**');
     // Must name an install source that actually serves this code — the bare
     // npm name `vibe-shield` belongs to a different publisher.
     expect(prompt).toContain('npx -y @vibefoundry/vibe-shield scan --fail-on high');
@@ -860,6 +862,7 @@ describe('helpers', () => {
       confidence: 'high',
       cwe: { id: 'CWE-78', name: 'x', url: '' },
       filePath: 'a.ts',
+      file: 'a.ts',
       absolutePath: '/a.ts',
       line: 1,
       column: 1,

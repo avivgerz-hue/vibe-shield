@@ -20,7 +20,9 @@ exports.formatGithub = formatGithub;
 exports.formatSarif = formatSarif;
 exports.formatResult = formatResult;
 exports.groupByFile = groupByFile;
-exports.OUTPUT_FORMATS = ['console', 'compact', 'summary', 'json', 'sarif', 'github'];
+const node_url_1 = require("node:url");
+const executive_1 = require("./executive");
+exports.OUTPUT_FORMATS = ['console', 'compact', 'summary', 'json', 'sarif', 'github', 'markdown', 'html'];
 const isOutputFormat = (value) => typeof value === 'string' && exports.OUTPUT_FORMATS.includes(value);
 exports.isOutputFormat = isOutputFormat;
 /** Bump when the JSON shape changes in a breaking way. */
@@ -193,7 +195,7 @@ function formatSarif(result) {
                     },
                 ],
                 originalUriBaseIds: {
-                    '%SRCROOT%': { uri: `${result.rootDir.split('\\').join('/')}/` },
+                    '%SRCROOT%': { uri: (0, node_url_1.pathToFileURL)(result.rootDir.endsWith('/') ? result.rootDir : result.rootDir + '/').href },
                 },
                 results: result.findings.map((finding) => ({
                     ruleId: finding.ruleId,
@@ -203,7 +205,7 @@ function formatSarif(result) {
                     locations: [
                         {
                             physicalLocation: {
-                                artifactLocation: { uri: finding.filePath, uriBaseId: '%SRCROOT%' },
+                                artifactLocation: { uri: finding.filePath.split('/').map(encodeURIComponent).join('/'), uriBaseId: '%SRCROOT%' },
                                 region: {
                                     startLine: finding.line,
                                     startColumn: finding.column,
@@ -236,6 +238,10 @@ function formatSarif(result) {
 /** Render `result` in the requested format. */
 function formatResult(result, format) {
     switch (format) {
+        case 'markdown':
+            return (0, executive_1.formatMarkdown)(result);
+        case 'html':
+            return (0, executive_1.formatHtml)(result);
         case 'json':
             return formatJson(result);
         case 'summary':

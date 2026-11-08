@@ -11,7 +11,7 @@
  *  - `github`   GitHub Actions workflow commands (annotations in the diff)
  */
 import type { Finding, ScanResult } from '../scanner/types';
-export declare const OUTPUT_FORMATS: readonly ["console", "compact", "summary", "json", "sarif", "github"];
+export declare const OUTPUT_FORMATS: readonly ["console", "compact", "summary", "json", "sarif", "github", "markdown", "html"];
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 export declare const isOutputFormat: (value: unknown) => value is OutputFormat;
 /** Bump when the JSON shape changes in a breaking way. */

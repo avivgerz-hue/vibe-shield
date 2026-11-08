@@ -19,6 +19,9 @@ import { execFileSync } from 'node:child_process';
 import * as path from 'node:path';
 
 import { createFileContext, detectProject } from './context';
+import { packageVersion } from './version';
+import { redactReportText } from './redact';
+import { emptyAttackSurface, inventoryFile, inventoryTables } from './attack-surface';
 import { IgnoreMatcher } from './gitignore';
 import { RULES_FINGERPRINT, SCAN_RULES, selectRules } from './rules';
 import {
@@ -454,7 +457,7 @@ export function scoreFindings(findings: readonly Finding[]): SecurityScore {
 /* -------------------------------------------------------------------------- */
 
 export const CACHE_FILE_NAME = '.vibe-shield-cache.json';
-export const CACHE_VERSION = 1;
+export const CACHE_VERSION = 2;
 
 interface CacheEntry {
   hash: string;
@@ -536,7 +539,7 @@ function toFindings(ctx: FileContext, rule: Rule, hits: readonly RuleHit[]): Fin
   const findings: Finding[] = [];
   for (const hit of hits) {
     const located = hit.offset !== undefined ? ctx.locate(hit.offset) : { line: hit.line ?? 1, column: hit.column ?? 1 };
-    const snippet = ctx.lineText(located.line).trim().slice(0, 200);
+    const snippet = ['VSB-INFRA-003', 'VSB-AUTH-012'].includes(rule.id) ? '[secret value redacted]' : redactReportText(ctx.lineText(located.line).trim()).slice(0, 200);
     findings.push({
       ruleId: rule.id,
       slug: rule.slug,
@@ -546,11 +549,12 @@ function toFindings(ctx: FileContext, rule: Rule, hits: readonly RuleHit[]): Fin
       confidence: hit.confidence ?? rule.confidence,
       cwe: rule.cwe,
       filePath: ctx.relativePath,
+      file: ctx.relativePath,
       absolutePath: ctx.absolutePath,
       line: located.line,
       column: located.column,
       snippet,
-      matched: hit.matched ?? snippet,
+      matched: ['VSB-INFRA-003', 'VSB-AUTH-012'].includes(rule.id) ? '[secret value redacted]' : redactReportText(hit.matched ?? snippet),
       message: hit.message ?? rule.description,
       remediation: rule.remediate ? rule.remediate(ctx, hit) : rule.remediation,
       insecureExample: rule.insecureExample,
@@ -566,36 +570,7 @@ function toFindings(ctx: FileContext, rule: Rule, hits: readonly RuleHit[]): Fin
 /* Main scan                                                                  */
 /* -------------------------------------------------------------------------- */
 
-const VERSION = process.env.npm_package_version ?? '1.0.0';
-
-let cachedVersion: string | null = null;
-
-/** Package version, resolved once from the nearest package.json. */
-export async function packageVersion(): Promise<string> {
-  if (cachedVersion) return cachedVersion;
-  let dir = __dirname;
-  for (let depth = 0; depth < 6; depth += 1) {
-    try {
-      const raw = await fs.readFile(path.join(dir, 'package.json'), 'utf8');
-      const parsed = JSON.parse(raw) as { name?: string; version?: string };
-      // Match the scoped name *or* the legacy bare one, so an install made
-      // before the package was published under `@vibefoundry/` still resolves
-      // its own version instead of reporting the fallback.
-      const isThisPackage = parsed.name === '@vibefoundry/vibe-shield' || parsed.name === 'vibe-shield';
-      if (isThisPackage && parsed.version) {
-        cachedVersion = parsed.version;
-        return cachedVersion;
-      }
-    } catch {
-      // Keep walking up.
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  cachedVersion = VERSION;
-  return cachedVersion;
-}
+export { packageVersion } from './version';
 
 /**
  * Scan a project. This is the one function the CLI, the tests and any embedding
@@ -642,6 +617,7 @@ export async function scanProject(options: ScanOptions): Promise<ScanResult> {
 
   const concurrency = Math.max(1, Math.min(256, options.concurrency ?? DEFAULT_CONCURRENCY));
   const findings: Finding[] = [];
+  const attackSurface = emptyAttackSurface();
   let suppressedCount = 0;
   let cacheHits = 0;
   let bytesScanned = 0;
@@ -659,9 +635,11 @@ export async function scanProject(options: ScanOptions): Promise<ScanResult> {
     } catch {
       return;
     }
+    const ctx = createFileContext(file.absolutePath, rootDir, content, project);
+    inventoryFile(ctx, attackSurface);
     const hash = contentHash(content);
     const cached = existing?.files[file.relativePath];
-    if (cached && cached.hash === hash && existing?.project === cache.project && existing?.rules === RULES_FINGERPRINT) {
+    if (file.relativePath !== 'package.json' && cached && cached.hash === hash && existing?.project === cache.project && existing?.rules === RULES_FINGERPRINT) {
       cacheHits += 1;
       filesScanned += 1;
       bytesScanned += file.bytes;
@@ -671,7 +649,6 @@ export async function scanProject(options: ScanOptions): Promise<ScanResult> {
       return;
     }
 
-    const ctx = createFileContext(file.absolutePath, rootDir, content, project);
     const applicable = rules.filter(
       (rule) => (!rule.appliesTo || rule.appliesTo(ctx)) && !rule.skipFlags?.some((flag) => ctx.flags[flag] === true),
     );
@@ -713,6 +690,10 @@ export async function scanProject(options: ScanOptions): Promise<ScanResult> {
   });
   await Promise.all(workers);
 
+  inventoryTables(attackSurface, project, new Set(discovered.files.map(f => f.relativePath)));
+  attackSurface.routes.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.method.localeCompare(b.method));
+  attackSurface.aiEntrypoints.sort((a, b) => a.file.localeCompare(b.file));
+  attackSurface.agentFiles.sort((a, b) => a.file.localeCompare(b.file));
   const unique = dedupe(findings);
   unique.sort(
     (a, b) =>
@@ -738,6 +719,7 @@ export async function scanProject(options: ScanOptions): Promise<ScanResult> {
   return {
     rootDir,
     command: 'scan',
+    attackSurface,
     findings: unique,
     score,
     stats: {

@@ -267,6 +267,46 @@ export const SECRET_PATTERNS: SecretPattern[] = [
     note: 'Datadog API/application key.',
   },
   {
+    id: 'gitlab-token', vendor: 'GitLab', family: 'saas', severity: 'high',
+    regex: /\bglpat-[A-Za-z0-9_-]{20,}\b/g, minEntropy: 3,
+    note: 'GitLab personal access token.',
+  },
+  {
+    id: 'digitalocean-token', vendor: 'DigitalOcean', family: 'saas', severity: 'high',
+    regex: /\bdop_v1_[a-f0-9]{64}\b/g, minEntropy: 3,
+    note: 'DigitalOcean API token.',
+  },
+  {
+    id: 'linear-token', vendor: 'Linear', family: 'saas', severity: 'high',
+    regex: /\blin_api_[A-Za-z0-9]{40}\b/g, minEntropy: 3,
+    note: 'Linear API token.',
+  },
+  {
+    id: 'cloudflare-token', vendor: 'Cloudflare', family: 'saas', severity: 'high',
+    regex: /\bCLOUDFLARE_API_TOKEN\b["']?\s*[:=]\s*["']([A-Za-z0-9_-]{40})["']/gi, minEntropy: 3,
+    note: 'A value assigned to a Cloudflare API token variable.',
+  },
+  {
+    id: 'cohere-token', vendor: 'Cohere', family: 'saas', severity: 'high',
+    regex: /\bCOHERE_API_KEY\b["']?\s*[:=]\s*["']([A-Za-z0-9_-]{20,})["']/gi, minEntropy: 3,
+    note: 'A value assigned to a Cohere API key variable.',
+  },
+  {
+    id: 'mistral-token', vendor: 'Mistral', family: 'saas', severity: 'high',
+    regex: /\bMISTRAL_API_KEY\b["']?\s*[:=]\s*["']([A-Za-z0-9_-]{20,})["']/gi, minEntropy: 3,
+    note: 'A value assigned to a Mistral API key variable.',
+  },
+  {
+    id: 'groq-token', vendor: 'Groq', family: 'saas', severity: 'high',
+    regex: /\bgsk_[A-Za-z0-9]{30,}\b/g, minEntropy: 3,
+    note: 'Groq API key.',
+  },
+  {
+    id: 'together-token', vendor: 'Together AI', family: 'saas', severity: 'high',
+    regex: /\bTOGETHER_API_KEY\b["']?\s*[:=]\s*["']([A-Za-z0-9_-]{20,})["']/gi, minEntropy: 3,
+    note: 'A value assigned to a Together AI API key variable.',
+  },
+  {
     id: 'jwt',
     vendor: 'JSON Web Token',
     family: 'jwt',

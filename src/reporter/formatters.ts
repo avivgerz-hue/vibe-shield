@@ -11,9 +11,11 @@
  *  - `github`   GitHub Actions workflow commands (annotations in the diff)
  */
 
+import { pathToFileURL } from 'node:url';
+import { formatHtml, formatMarkdown } from './executive';
 import type { Finding, ScanResult, Severity } from '../scanner/types';
 
-export const OUTPUT_FORMATS = ['console', 'compact', 'summary', 'json', 'sarif', 'github'] as const;
+export const OUTPUT_FORMATS = ['console', 'compact', 'summary', 'json', 'sarif', 'github', 'markdown', 'html'] as const;
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 
 export const isOutputFormat = (value: unknown): value is OutputFormat =>
@@ -233,7 +235,7 @@ export function formatSarif(result: ScanResult): string {
           },
         ],
         originalUriBaseIds: {
-          '%SRCROOT%': { uri: `${result.rootDir.split('\\').join('/')}/` },
+          '%SRCROOT%': { uri: pathToFileURL(result.rootDir.endsWith('/') ? result.rootDir : result.rootDir + '/').href },
         },
         results: result.findings.map((finding) => ({
           ruleId: finding.ruleId,
@@ -243,7 +245,7 @@ export function formatSarif(result: ScanResult): string {
           locations: [
             {
               physicalLocation: {
-                artifactLocation: { uri: finding.filePath, uriBaseId: '%SRCROOT%' },
+                artifactLocation: { uri: finding.filePath.split('/').map(encodeURIComponent).join('/'), uriBaseId: '%SRCROOT%' },
                 region: {
                   startLine: finding.line,
                   startColumn: finding.column,
@@ -278,6 +280,10 @@ export function formatSarif(result: ScanResult): string {
 /** Render `result` in the requested format. */
 export function formatResult(result: ScanResult, format: OutputFormat): string {
   switch (format) {
+    case 'markdown':
+      return formatMarkdown(result);
+    case 'html':
+      return formatHtml(result);
     case 'json':
       return formatJson(result);
     case 'summary':

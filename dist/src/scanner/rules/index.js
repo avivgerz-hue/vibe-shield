@@ -12,6 +12,7 @@ exports.RULES_FINGERPRINT = exports.ALL_RULES = exports.SCAN_RULES = exports.fil
 exports.getRule = getRule;
 exports.rulesByCategory = rulesByCategory;
 exports.selectRules = selectRules;
+const hardening_1 = require("./hardening");
 const ai_vulnerabilities_1 = require("./ai-vulnerabilities");
 const client_exposure_1 = require("./client-exposure");
 const database_exposure_1 = require("./database-exposure");
@@ -44,6 +45,9 @@ exports.SCAN_RULES = [
     ...database_exposure_1.DATABASE_EXPOSURE_RULES,
     ...ai_vulnerabilities_1.AI_VULNERABILITY_RULES,
     ...secret_entropy_1.SECRET_ENTROPY_RULES,
+    ...hardening_1.HARDENING_RULES,
+    hardening_1.MISSING_LOCKFILE_RULE,
+    hardening_1.DOCKER_DEFAULT_ROOT_RULE,
 ];
 /** Every rule the tool knows about, including the agent-integrity family. */
 exports.ALL_RULES = [...exports.SCAN_RULES, ...skill_auditor_1.AGENT_RULES];

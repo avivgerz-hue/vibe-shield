@@ -47,14 +47,13 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hasFindingsAtOrAbove = exports.contentHash = exports.CACHE_VERSION = exports.CACHE_FILE_NAME = exports.isDocPath = exports.isTestPath = exports.DEFAULT_CONCURRENCY = exports.MAX_FILE_SIZE_BYTES = exports.BINARY_EXTENSIONS = exports.DEFAULT_IGNORED_DIRS = void 0;
+exports.hasFindingsAtOrAbove = exports.packageVersion = exports.contentHash = exports.CACHE_VERSION = exports.CACHE_FILE_NAME = exports.isDocPath = exports.isTestPath = exports.DEFAULT_CONCURRENCY = exports.MAX_FILE_SIZE_BYTES = exports.BINARY_EXTENSIONS = exports.DEFAULT_IGNORED_DIRS = void 0;
 exports.discoverFiles = discoverFiles;
 exports.parseSuppressions = parseSuppressions;
 exports.suppressionFor = suppressionFor;
 exports.applySuppressions = applySuppressions;
 exports.scoreFindings = scoreFindings;
 exports.runRulesOnFile = runRulesOnFile;
-exports.packageVersion = packageVersion;
 exports.scanProject = scanProject;
 exports.dedupe = dedupe;
 exports.gitTrackedPaths = gitTrackedPaths;
@@ -63,6 +62,9 @@ const node_crypto_1 = require("node:crypto");
 const node_child_process_1 = require("node:child_process");
 const path = __importStar(require("node:path"));
 const context_1 = require("./context");
+const version_1 = require("./version");
+const redact_1 = require("./redact");
+const attack_surface_1 = require("./attack-surface");
 const gitignore_1 = require("./gitignore");
 const rules_1 = require("./rules");
 const types_1 = require("./types");
@@ -410,7 +412,7 @@ function scoreFindings(findings) {
 /* Cache                                                                      */
 /* -------------------------------------------------------------------------- */
 exports.CACHE_FILE_NAME = '.vibe-shield-cache.json';
-exports.CACHE_VERSION = 1;
+exports.CACHE_VERSION = 2;
 /** Content hash used as the cache key for one file. */
 const contentHash = (content) => (0, node_crypto_1.createHash)('sha1').update(content).digest('hex').slice(0, 20);
 exports.contentHash = contentHash;
@@ -482,7 +484,7 @@ function toFindings(ctx, rule, hits) {
     const findings = [];
     for (const hit of hits) {
         const located = hit.offset !== undefined ? ctx.locate(hit.offset) : { line: hit.line ?? 1, column: hit.column ?? 1 };
-        const snippet = ctx.lineText(located.line).trim().slice(0, 200);
+        const snippet = ['VSB-INFRA-003', 'VSB-AUTH-012'].includes(rule.id) ? '[secret value redacted]' : (0, redact_1.redactReportText)(ctx.lineText(located.line).trim()).slice(0, 200);
         findings.push({
             ruleId: rule.id,
             slug: rule.slug,
@@ -492,11 +494,12 @@ function toFindings(ctx, rule, hits) {
             confidence: hit.confidence ?? rule.confidence,
             cwe: rule.cwe,
             filePath: ctx.relativePath,
+            file: ctx.relativePath,
             absolutePath: ctx.absolutePath,
             line: located.line,
             column: located.column,
             snippet,
-            matched: hit.matched ?? snippet,
+            matched: ['VSB-INFRA-003', 'VSB-AUTH-012'].includes(rule.id) ? '[secret value redacted]' : (0, redact_1.redactReportText)(hit.matched ?? snippet),
             message: hit.message ?? rule.description,
             remediation: rule.remediate ? rule.remediate(ctx, hit) : rule.remediation,
             insecureExample: rule.insecureExample,
@@ -510,37 +513,8 @@ function toFindings(ctx, rule, hits) {
 /* -------------------------------------------------------------------------- */
 /* Main scan                                                                  */
 /* -------------------------------------------------------------------------- */
-const VERSION = process.env.npm_package_version ?? '1.0.0';
-let cachedVersion = null;
-/** Package version, resolved once from the nearest package.json. */
-async function packageVersion() {
-    if (cachedVersion)
-        return cachedVersion;
-    let dir = __dirname;
-    for (let depth = 0; depth < 6; depth += 1) {
-        try {
-            const raw = await node_fs_1.promises.readFile(path.join(dir, 'package.json'), 'utf8');
-            const parsed = JSON.parse(raw);
-            // Match the scoped name *or* the legacy bare one, so an install made
-            // before the package was published under `@vibefoundry/` still resolves
-            // its own version instead of reporting the fallback.
-            const isThisPackage = parsed.name === '@vibefoundry/vibe-shield' || parsed.name === 'vibe-shield';
-            if (isThisPackage && parsed.version) {
-                cachedVersion = parsed.version;
-                return cachedVersion;
-            }
-        }
-        catch {
-            // Keep walking up.
-        }
-        const parent = path.dirname(dir);
-        if (parent === dir)
-            break;
-        dir = parent;
-    }
-    cachedVersion = VERSION;
-    return cachedVersion;
-}
+var version_2 = require("./version");
+Object.defineProperty(exports, "packageVersion", { enumerable: true, get: function () { return version_2.packageVersion; } });
 /**
  * Scan a project. This is the one function the CLI, the tests and any embedding
  * application call; everything else in this module is an implementation detail.
@@ -581,6 +555,7 @@ async function scanProject(options) {
     };
     const concurrency = Math.max(1, Math.min(256, options.concurrency ?? exports.DEFAULT_CONCURRENCY));
     const findings = [];
+    const attackSurface = (0, attack_surface_1.emptyAttackSurface)();
     let suppressedCount = 0;
     let cacheHits = 0;
     let bytesScanned = 0;
@@ -599,9 +574,11 @@ async function scanProject(options) {
         catch {
             return;
         }
+        const ctx = (0, context_1.createFileContext)(file.absolutePath, rootDir, content, project);
+        (0, attack_surface_1.inventoryFile)(ctx, attackSurface);
         const hash = (0, exports.contentHash)(content);
         const cached = existing?.files[file.relativePath];
-        if (cached && cached.hash === hash && existing?.project === cache.project && existing?.rules === rules_1.RULES_FINGERPRINT) {
+        if (file.relativePath !== 'package.json' && cached && cached.hash === hash && existing?.project === cache.project && existing?.rules === rules_1.RULES_FINGERPRINT) {
             cacheHits += 1;
             filesScanned += 1;
             bytesScanned += file.bytes;
@@ -610,7 +587,6 @@ async function scanProject(options) {
             options.onFile?.(file.relativePath, (index += 1), discovered.files.length);
             return;
         }
-        const ctx = (0, context_1.createFileContext)(file.absolutePath, rootDir, content, project);
         const applicable = rules.filter((rule) => (!rule.appliesTo || rule.appliesTo(ctx)) && !rule.skipFlags?.some((flag) => ctx.flags[flag] === true));
         ruleInvocations += applicable.length;
         const fileFindings = [];
@@ -650,6 +626,10 @@ async function scanProject(options) {
         }
     });
     await Promise.all(workers);
+    (0, attack_surface_1.inventoryTables)(attackSurface, project, new Set(discovered.files.map(f => f.relativePath)));
+    attackSurface.routes.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.method.localeCompare(b.method));
+    attackSurface.aiEntrypoints.sort((a, b) => a.file.localeCompare(b.file));
+    attackSurface.agentFiles.sort((a, b) => a.file.localeCompare(b.file));
     const unique = dedupe(findings);
     unique.sort((a, b) => types_1.SEVERITY_WEIGHT[b.severity] - types_1.SEVERITY_WEIGHT[a.severity] ||
         a.filePath.localeCompare(b.filePath) ||
@@ -670,6 +650,7 @@ async function scanProject(options) {
     return {
         rootDir,
         command: 'scan',
+        attackSurface,
         findings: unique,
         score,
         stats: {
@@ -687,7 +668,7 @@ async function scanProject(options) {
         scannedPaths: discovered.files.map((file) => file.relativePath),
         startedAt: new Date(started).toISOString(),
         finishedAt: new Date(finished).toISOString(),
-        version: await packageVersion(),
+        version: await (0, version_1.packageVersion)(),
         ruleCount: rules.length,
         suppressedCount,
         notices,

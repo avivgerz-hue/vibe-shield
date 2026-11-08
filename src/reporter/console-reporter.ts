@@ -280,6 +280,15 @@ export function renderConsoleReport(result: ScanResult, options: ReportOptions =
     lines.push(...bars);
   }
   lines.push(...renderCategories(result, color));
+  if (result.attackSurface) {
+    const surface = result.attackSurface;
+    lines.push('', color.bold('Attack surface (static signals; review required)'));
+    for (const route of surface.routes) lines.push(`  route ${route.method} ${route.path} — ${route.file}:${route.line} (${route.auth})`);
+    for (const table of surface.tables) lines.push(`  table ${table.table} — ${table.file}:${table.line} (${table.rls})`);
+    for (const ai of surface.aiEntrypoints) lines.push(`  AI entrypoint ${ai.file}:${ai.line}`);
+    for (const agent of surface.agentFiles) lines.push(`  ${agent.kind} ${agent.name ?? ''} — ${agent.file}`);
+    if (!surface.routes.length && !surface.tables.length && !surface.aiEntrypoints.length && !surface.agentFiles.length) lines.push('  No inventory signals observed.');
+  }
   if (result.findings.length) {
     lines.push('');
     lines.push(color.bold('Findings'));

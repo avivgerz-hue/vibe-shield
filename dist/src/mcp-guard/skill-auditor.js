@@ -59,6 +59,9 @@ const path = __importStar(require("node:path"));
 const patterns_1 = require("../secrets/patterns");
 const context_1 = require("../scanner/context");
 const gitignore_1 = require("../scanner/gitignore");
+const attack_surface_1 = require("../scanner/attack-surface");
+const version_1 = require("../scanner/version");
+const redact_1 = require("../scanner/redact");
 const helpers_1 = require("../scanner/rules/helpers");
 const shared_1 = require("../scanner/rules/shared");
 const types_1 = require("../scanner/types");
@@ -1031,6 +1034,7 @@ async function auditSkills(rootDir, options = {}) {
     // auditor's own discovery rules so `audit-skills .claude` works as expected.
     const files = options.paths?.length ? await resolveAuditPaths(rootDir, options.paths) : await discoverAgentFiles(rootDir);
     const findings = [];
+    const attackSurface = (0, attack_surface_1.emptyAttackSurface)();
     const scanned = [];
     let bytesScanned = 0;
     for (const absolutePath of files) {
@@ -1042,6 +1046,7 @@ async function auditSkills(rootDir, options = {}) {
             continue;
         }
         const ctx = (0, context_1.createFileContext)(absolutePath, rootDir, content, project);
+        (0, attack_surface_1.inventoryFile)(ctx, attackSurface);
         if (ctx.flags.isLockfile || ctx.flags.isGenerated)
             continue;
         scanned.push(ctx.relativePath);
@@ -1070,11 +1075,12 @@ async function auditSkills(rootDir, options = {}) {
                     confidence: hit.confidence ?? rule.confidence,
                     cwe: rule.cwe,
                     filePath: ctx.relativePath,
+                    file: ctx.relativePath,
                     absolutePath: ctx.absolutePath,
                     line: located.line,
                     column: located.column,
-                    snippet: ctx.lineText(located.line).trim().slice(0, 200),
-                    matched: hit.matched ?? ctx.lineText(located.line).trim().slice(0, 200),
+                    snippet: (0, redact_1.redactReportText)(ctx.lineText(located.line).trim()).slice(0, 200),
+                    matched: (0, redact_1.redactReportText)(hit.matched ?? ctx.lineText(located.line).trim()).slice(0, 200),
                     message: hit.message ?? rule.description,
                     remediation: rule.remediate ? rule.remediate(ctx, hit) : rule.remediation,
                     insecureExample: rule.insecureExample,
@@ -1101,6 +1107,7 @@ async function auditSkills(rootDir, options = {}) {
     return {
         rootDir,
         command: 'audit-skills',
+        attackSurface,
         findings: unique,
         score: scoreFindings(unique),
         stats: {
@@ -1118,7 +1125,7 @@ async function auditSkills(rootDir, options = {}) {
         scannedPaths: scanned,
         startedAt,
         finishedAt: new Date(finished).toISOString(),
-        version: options.version ?? process.env.npm_package_version ?? '1.0.0',
+        version: options.version ?? await (0, version_1.packageVersion)(),
         ruleCount: rules.length,
         suppressedCount: 0,
         notices: scanned.length ? [] : ['No agent instruction or MCP configuration files were found.'],

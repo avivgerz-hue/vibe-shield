@@ -68,7 +68,6 @@ const vendorSecret = (0, helpers_1.defineRule)({
     extensions: [...CLIENT_EXTENSIONS, 'py', 'rb', 'php', 'go', 'sh', 'yml', 'yaml', 'json', 'toml', 'tf', 'env'],
     skipFlags: ['isLockfile', 'isGenerated'],
     appliesTo: (ctx) => !isNonShipping(ctx) && !isDetectorMaterial(ctx),
-    contentHints: [/sk_|pk_live|AKIA|ghp_|xox[baprs]-|AIza|sk-ant-|eyJhbGciOi|whsec_|SG\./],
     detect(ctx) {
         return secretHits(ctx, { skipGeneric: true })
             .filter((match) => match.family !== 'private-key' && match.family !== 'jwt')
@@ -216,7 +215,6 @@ const clientVendorSecret = (0, helpers_1.defineRule)({
     extensions: CLIENT_EXTENSIONS,
     skipFlags: ['isLockfile', 'isGenerated'],
     appliesTo: (ctx) => (0, shared_1.isBrowserFile)(ctx) && !isNonShipping(ctx) && !isDetectorMaterial(ctx),
-    contentHints: [/sk_|pk_live|AKIA|ghp_|xox[baprs]-|AIza|sk-ant-|eyJhbGciOi|whsec_/],
     detect(ctx) {
         return secretHits(ctx, { skipGeneric: true })
             .filter((match) => match.family !== 'private-key')

@@ -13,7 +13,7 @@
  * which is what lets the test suite drive the real CLI without a build step.
  */
 
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import * as path from 'node:path';
 
 import { auditSkills } from '../src/mcp-guard/skill-auditor';
@@ -62,8 +62,10 @@ COMMANDS
   help                   Print this help.
 
 SCAN OPTIONS
-  --format <fmt>         console | compact | summary | json | sarif | github   (console)
-  --out <file>           Write the report to a file instead of stdout.
+  --format <fmt>         console | compact | summary | json | sarif | github | markdown | html
+  --out <file>           Write the report to a file.
+  --report <file>        Write a report (format inferred from extension).
+  --patch-prompt <file>  Write a remediation prompt to this file.
   --fix-prompt           Write ${PATCH_PROMPT_FILENAME} with exact fix instructions.
   --fail-on <severity>   Exit 1 when a finding at/above this severity exists. (critical)
   --severity <severity>  Only report findings at/above this severity.
@@ -109,6 +111,7 @@ const BOOLEAN_FLAGS = new Set([
   // `--mcp` is an alias for the `mcp` subcommand, so `npx -y
   // @vibefoundry/vibe-shield --mcp` works the way most MCP clients expect.
   'mcp',
+  'version',
   'fix-prompt',
   'include-tests',
   'include-docs',
@@ -130,6 +133,8 @@ const BOOLEAN_FLAGS = new Set([
 const VALUE_FLAGS = new Set([
   'format',
   'out',
+  'report',
+  'patch-prompt',
   'fail-on',
   'severity',
   'rules',
@@ -239,9 +244,10 @@ async function emitReport(
   if (noColor) color.enabled = false;
 
   let patchPath: string | null = null;
-  if (options.fixPrompt) {
+  if (options.fixPrompt || flagString(parsed, 'patch-prompt')) {
     patchPath = await writePatchPrompt(result, {
       outDir: io.cwd,
+      fileName: flagString(parsed, 'patch-prompt'),
       minSeverity: (isSeverity(flagString(parsed, 'severity')) ? (flagString(parsed, 'severity') as Severity) : 'info'),
     });
   }
@@ -274,11 +280,16 @@ async function emitReport(
     );
   }
 
-  if (options.out) {
-    const target = path.resolve(io.cwd, options.out);
+  const reportPath = flagString(parsed, 'report');
+  const outputPath = reportPath ?? options.out;
+  if (outputPath) {
+    const target = path.resolve(io.cwd, outputPath);
     const { promises: fs } = await import('node:fs');
-    await fs.writeFile(target, formatResult(result, options.format === 'console' ? 'json' : options.format), 'utf8');
-    write(io, 'stderr', `📄 Report written to ${options.out}\n`);
+    const inferred = ({ '.md': 'markdown', '.markdown': 'markdown', '.html': 'html', '.sarif': 'sarif', '.json': 'json' } as const)[path.extname(outputPath).toLowerCase() as '.md'];
+    const fileFormat = reportPath && !flagString(parsed, 'format') ? inferred : options.format === 'console' ? 'json' : options.format;
+    if (!fileFormat) throw new Error('Cannot infer report format from extension; use --format.');
+    await fs.writeFile(target, formatResult(result, fileFormat), 'utf8');
+    write(io, 'stderr', `📄 Report written to ${outputPath}\n`);
   }
 }
 
@@ -317,9 +328,15 @@ async function commandScan(parsed: ParsedArgs, io: CliIo): Promise<number> {
     return EXIT_USAGE;
   }
 
+  // For a single directory outside cwd, report paths relative to that project,
+  // and discover its own config, middleware and migrations.
+  const target = parsed.positionals.length === 1 ? path.resolve(io.cwd, parsed.positionals[0]!) : '';
+  const outside = target && (path.relative(io.cwd, target) === '..' || path.relative(io.cwd, target).startsWith(`..${path.sep}`));
+  const externalRoot = outside ? (statSync(target).isDirectory() ? target : path.dirname(target)) : undefined;
+  const externalPaths = externalRoot ? [path.relative(externalRoot, target) || '.'] : undefined;
   const result = await scanProject({
-    rootDir: io.cwd,
-    paths: parsed.positionals.length ? parsed.positionals : undefined,
+    rootDir: externalRoot ?? io.cwd,
+    paths: externalPaths ?? (parsed.positionals.length ? parsed.positionals : undefined),
     rules,
     ignorePatterns: (flagString(parsed, 'ignore') ?? '').split('\n').filter(Boolean),
     // `undefined` means "use the engine default" (which is: include everything
@@ -370,8 +387,12 @@ async function commandAuditSkills(parsed: ParsedArgs, io: CliIo): Promise<number
     return EXIT_USAGE;
   }
 
-  const result = await auditSkills(io.cwd, {
-    paths: parsed.positionals.length ? parsed.positionals : undefined,
+  const target = parsed.positionals.length === 1 ? path.resolve(io.cwd, parsed.positionals[0]!) : '';
+  const relative = target ? path.relative(io.cwd, target) : '';
+  const outside = relative === '..' || relative.startsWith(`..${path.sep}`);
+  const externalRoot = outside && existsSync(target) && statSync(target).isDirectory() ? target : undefined;
+  const result = await auditSkills(externalRoot ?? io.cwd, {
+    paths: externalRoot ? undefined : parsed.positionals.length ? parsed.positionals : undefined,
     version: await packageVersion(),
   });
 

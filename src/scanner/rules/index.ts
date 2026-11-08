@@ -7,6 +7,7 @@
  * single list.
  */
 
+import { HARDENING_RULES, MISSING_LOCKFILE_RULE, DOCKER_DEFAULT_ROOT_RULE } from './hardening';
 import { AI_VULNERABILITY_RULES } from './ai-vulnerabilities';
 import { CLIENT_EXPOSURE_RULES } from './client-exposure';
 import { DATABASE_EXPOSURE_RULES } from './database-exposure';
@@ -29,6 +30,9 @@ export const SCAN_RULES: readonly Rule[] = [
   ...DATABASE_EXPOSURE_RULES,
   ...AI_VULNERABILITY_RULES,
   ...SECRET_ENTROPY_RULES,
+  ...HARDENING_RULES,
+  MISSING_LOCKFILE_RULE,
+  DOCKER_DEFAULT_ROOT_RULE,
 ];
 
 /** Every rule the tool knows about, including the agent-integrity family. */

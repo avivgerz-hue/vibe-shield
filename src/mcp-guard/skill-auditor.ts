@@ -18,6 +18,9 @@ import * as path from 'node:path';
 import { findSecrets } from '../secrets/patterns';
 import { createFileContext, detectProject, tolerantJsonParse } from '../scanner/context';
 import { IgnoreMatcher } from '../scanner/gitignore';
+import { emptyAttackSurface, inventoryFile } from '../scanner/attack-surface';
+import { packageVersion } from '../scanner/version';
+import { redactReportText } from '../scanner/redact';
 import { defineRule, fileHit } from '../scanner/rules/helpers';
 import { CWES, isGitInstallArg } from '../scanner/rules/shared';
 import {
@@ -1079,6 +1082,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
   const files = options.paths?.length ? await resolveAuditPaths(rootDir, options.paths) : await discoverAgentFiles(rootDir);
 
   const findings: Finding[] = [];
+  const attackSurface = emptyAttackSurface();
   const scanned: string[] = [];
   let bytesScanned = 0;
 
@@ -1090,6 +1094,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
       continue;
     }
     const ctx = createFileContext(absolutePath, rootDir, content, project);
+    inventoryFile(ctx, attackSurface);
     if (ctx.flags.isLockfile || ctx.flags.isGenerated) continue;
     scanned.push(ctx.relativePath);
     bytesScanned += Buffer.byteLength(content, 'utf8');
@@ -1114,11 +1119,12 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
           confidence: hit.confidence ?? rule.confidence,
           cwe: rule.cwe,
           filePath: ctx.relativePath,
+          file: ctx.relativePath,
           absolutePath: ctx.absolutePath,
           line: located.line,
           column: located.column,
-          snippet: ctx.lineText(located.line).trim().slice(0, 200),
-          matched: hit.matched ?? ctx.lineText(located.line).trim().slice(0, 200),
+          snippet: redactReportText(ctx.lineText(located.line).trim()).slice(0, 200),
+          matched: redactReportText(hit.matched ?? ctx.lineText(located.line).trim()).slice(0, 200),
           message: hit.message ?? rule.description,
           remediation: rule.remediate ? rule.remediate(ctx, hit) : rule.remediation,
           insecureExample: rule.insecureExample,
@@ -1150,6 +1156,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
   return {
     rootDir,
     command: 'audit-skills',
+    attackSurface,
     findings: unique,
     score: scoreFindings(unique),
     stats: {
@@ -1167,7 +1174,7 @@ export async function auditSkills(rootDir: string, options: AuditOptions = {}): 
     scannedPaths: scanned,
     startedAt,
     finishedAt: new Date(finished).toISOString(),
-    version: options.version ?? process.env.npm_package_version ?? '1.0.0',
+    version: options.version ?? await packageVersion(),
     ruleCount: rules.length,
     suppressedCount: 0,
     notices: scanned.length ? [] : ['No agent instruction or MCP configuration files were found.'],

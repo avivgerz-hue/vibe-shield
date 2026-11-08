@@ -44,6 +44,7 @@ const vulnerableProject = (): TempProject =>
 const cleanProject = (): TempProject =>
   makeProject({
     'package.json': JSON.stringify({ name: 'app', dependencies: { next: '14.0.0' } }),
+    'package-lock.json': '{}',
     'lib/math.ts': 'export const add = (a: number, b: number): number => a + b;\n',
   });
 

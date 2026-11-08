@@ -16,7 +16,7 @@ authors:
   - name: "VibeFoundry"
     alias: avivgerz-hue
     website: "https://github.com/avivgerz-hue"
-version: "1.1.0"
+version: "2.0.0"
 date-released: "2026-11-07"
 license: MIT
 url: "https://github.com/avivgerz-hue/vibe-shield"
@@ -37,7 +37,7 @@ identifiers:
     value: "https://github.com/avivgerz-hue/vibe-shield"
     description: "Source repository"
   - type: other
-    value: "npm:vibe-shield"
+    value: "npm:@vibefoundry/vibe-shield"
     description: "npm package"
 references:
   - type: software
