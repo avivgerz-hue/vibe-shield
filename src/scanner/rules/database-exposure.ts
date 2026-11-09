@@ -15,16 +15,13 @@
 import { UNTRUSTED_SOURCE_REGEX } from '../lexicon';
 import { balancedBlock, looksDynamic } from '../text';
 import { defineRule, regexHits } from './helpers';
-import { CWES, LOGIC_SKIP_FLAGS, isBrowserFile } from './shared';
+import { CWES, LOGIC_SKIP_FLAGS, isClientReachable } from './shared';
 import type { FileContext, Rule, RuleHit, SqlTableInfo } from '../types';
 
 const SQL_LANGUAGES = ['sql', 'prisma'] as const;
 const APP_EXTENSIONS = ['ts', 'tsx', 'js', 'jsx', 'mts', 'mjs', 'cts', 'cjs', 'py', 'rb', 'php', 'go'];
 
 const SUPABASE_SCHEMA_REGEX = /\b(?:public\.|supabase|postgrest|anon|authenticated)\b/i;
-
-/** The build-time guard that keeps a module out of the client bundle. */
-const SERVER_ONLY_GUARD_REGEX = /import\s+['"]server-only['"]|\brequire\(\s*['"]server-only['"]\s*\)/;
 
 /** Does the project speak PostgREST (i.e. are tables reachable from a browser)? */
 const isExposedBackend = (ctx: FileContext): boolean =>
@@ -510,35 +507,20 @@ const serviceRoleMisuse: Rule = defineRule({
   detect(ctx) {
     if (!/(?:SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|serviceRoleKey|SUPABASE_SECRET_KEY)/.test(ctx.code)) return [];
     const hits: RuleHit[] = [];
-    const isServerBoundary =
-      SERVER_ONLY_GUARD_REGEX.test(ctx.code) ||
-      /export\s+const\s+runtime\s*=\s*['"]nodejs['"]/.test(ctx.code) ||
-      ctx.flags.isAppRouterRoute ||
-      ctx.flags.isServerActionModule ||
-      ctx.flags.isPagesApiRoute;
     for (const match of ctx.code.matchAll(/(?:SERVICE_ROLE_KEY|SERVICE_ROLE|service_role|serviceRoleKey|SUPABASE_SECRET_KEY)/g)) {
       const line = ctx.locate(match.index).line;
       const owner = ctx.lineText(line);
-      if (!/(?:createClient|createServerClient|Authorization|Bearer|apikey|headers)/i.test(owner)) continue;
-      if (isBrowserFile(ctx)) {
-        hits.push({
-          offset: match.index,
-          matched: 'SERVICE_ROLE_KEY',
-          message: 'The RLS-bypassing service-role key is referenced from browser-reachable code.',
-          severity: 'critical',
-          confidence: 'high',
-          data: { boundary: 'client' },
-        });
-        continue;
-      }
-      if (isServerBoundary) continue;
+      const before = ctx.code.slice(Math.max(0, match.index - 400), match.index);
+      if (!/(?:createClient|createServerClient|Authorization|Bearer|apikey|headers)/i.test(owner) && !/\b(?:createClient|createServerClient)\s*\([^)]*$/i.test(before)) continue;
+      const publicSecret = /(?:NEXT_PUBLIC_|VITE_|PUBLIC_|REACT_APP_|EXPO_PUBLIC_)[A-Za-z0-9_]*(?:SERVICE_ROLE|SERVICE_KEY|SUPABASE_SECRET)/i.test(owner);
+      if (!isClientReachable(ctx) && !publicSecret) continue;
       hits.push({
         offset: match.index,
         matched: 'SERVICE_ROLE_KEY',
-        message: 'Service-role key used in a module with no server-only boundary — any importer inherits RLS bypass.',
+        message: publicSecret ? 'A privileged key uses a public environment prefix.' : 'The RLS-bypassing service-role key is referenced from client-reachable code.',
         severity: 'critical',
-        confidence: 'medium',
-        data: { boundary: 'unmarked' },
+        confidence: 'high',
+        data: { boundary: 'client' },
       });
     }
     return hits;

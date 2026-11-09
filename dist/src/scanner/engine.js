@@ -419,6 +419,7 @@ exports.contentHash = contentHash;
 /** Fingerprint of the whole project (manifests + layout) for cache validity. */
 const projectFingerprint = (project) => {
     const payload = [
+        (project.clientReachablePaths ?? []).join(','),
         project.frameworks.join(','),
         project.dependencies.sort().join(','),
         project.migrationFiles.join(','),
@@ -539,6 +540,8 @@ async function scanProject(options) {
         project = (0, types_1.emptyProjectContext)(rootDir);
         notices.push('Project detection failed; project-wide rules (RLS, framework flags) were skipped.');
     }
+    if (project.clientGraphIncomplete)
+        notices.push('Client import graph is incomplete due to size limits or unreadable files; review server/client boundaries manually.');
     options.onProject?.(project);
     const discovered = await discoverFiles(rootDir, options);
     if (!discovered.files.length) {

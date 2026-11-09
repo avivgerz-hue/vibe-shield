@@ -160,6 +160,8 @@ vibe-shield encodes those specific shapes: 92 signatures across eight defensive 
 
 ## 📊 Vulnerability Coverage Matrix
 
+**Client-boundary limitation:** Client reachability is a best-effort static graph of literal imports, re-exports and `require` calls using relative paths and root `tsconfig.json`/`jsconfig.json` aliases. Dynamic paths, inherited or nested configurations, excluded or oversized files and other bundler resolution may be missed. A server-side service-role helper still bypasses RLS: use `import 'server-only'`, authorize every privileged request, and verify the production bundle. Auth-helper names and `with*` wrappers are signals, not proof that authorization is enforced.
+
 **80 code signatures + 12 agent-integrity signatures = 92.** Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and an OWASP association — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
 
 ### Client-side secret & data exposure — `VSB-CLIENT-*`
@@ -168,7 +170,7 @@ vibe-shield encodes those specific shapes: 92 signatures across eight defensive 
 | --- | --- | --- | --- |
 | `VSB-CLIENT-001` | `NEXT_PUBLIC_` / `VITE_` / `PUBLIC_` / `REACT_APP_` + a server-only secret name (`SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`, `DATABASE_URL`…) | [CWE-200](https://cwe.mitre.org/data/definitions/200.html) | critical |
 | `VSB-CLIENT-002` | server-only `process.env.*SECRET*` read inside a `"use client"` module | CWE-200 | high |
-| `VSB-CLIENT-003` | `createClient(url, SERVICE_ROLE_KEY)` — RLS bypass from a client-reachable file | [CWE-250](https://cwe.mitre.org/data/definitions/250.html) | critical |
+| `VSB-CLIENT-003` | `createClient(url, SERVICE_ROLE_KEY)` — RLS bypass in a client-reachable file or public env | [CWE-250](https://cwe.mitre.org/data/definitions/250.html) | critical |
 | `VSB-CLIENT-004` | `supabaseAdmin` / `adminClient` / `serviceRoleClient` referenced from browser code | CWE-250 | critical |
 | `VSB-CLIENT-005` | `dangerouslyAllowBrowser: true`, provider SDK keyed in the browser | [CWE-749](https://cwe.mitre.org/data/definitions/749.html) | high |
 | `VSB-CLIENT-006` | `.env*` assigns a live-looking credential to a public variable | [CWE-540](https://cwe.mitre.org/data/definitions/540.html) | critical |
@@ -199,7 +201,7 @@ vibe-shield encodes those specific shapes: 92 signatures across eight defensive 
 | `VSB-DB-005` | `DISABLE ROW LEVEL SECURITY`, `DROP POLICY`, `BYPASSRLS` | CWE-284 | critical/high |
 | `VSB-DB-006` | `$queryRawUnsafe`, `$executeRawUnsafe`, `knex.raw`, `sequelize.query`, `.raw()` with a dynamic string | [CWE-89](https://cwe.mitre.org/data/definitions/89.html) | critical |
 | `VSB-DB-007` | hand-built SQL from request data — `${}`, `+`, Python f-strings, PHP interpolation | CWE-89 | critical |
-| `VSB-DB-008` | Supabase service-role key outside a `server-only` boundary | CWE-250 | critical |
+| `VSB-DB-008` | Supabase service-role key observed in client-reachable code or public env | CWE-250 | critical |
 | `VSB-DB-009` | `createBucket(…, { public: true })` | CWE-732 | medium |
 | `VSB-DB-010` | request data used as a table, column or `ORDER BY` identifier | CWE-89 | high |
 

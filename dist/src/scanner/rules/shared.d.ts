@@ -62,6 +62,8 @@ export declare const LOGIC_SKIP_FLAGS: readonly ["isTestFile", "isDocumentation"
 export declare const verifiesAuth: (ctx: FileContext) => boolean;
 /** True when the file ships to the browser (client directive or client-ish path). */
 export declare const isBrowserFile: (ctx: FileContext) => boolean;
+/** Observed client code or a module reachable through the static import graph. */
+export declare const isClientReachable: (ctx: FileContext) => boolean;
 /** True when `ctx` checks a role/permission/ownership claim. */
 export declare const checksRole: (ctx: FileContext) => boolean;
 /**

@@ -22,7 +22,7 @@ import {
 } from '../lexicon';
 import { balancedBlock, escapeRegExp, isPlaceholderSecret, shannonEntropy } from '../text';
 import { defineRule, fileHit, regexHits } from './helpers';
-import { CWES } from './shared';
+import { CWES, isClientReachable } from './shared';
 import type { FileContext, Rule, RuleHit } from '../types';
 
 const PREFIX_SRC = PUBLIC_ENV_PREFIXES.map(escapeRegExp).join('|');
@@ -204,7 +204,7 @@ const supabaseServiceRoleClient: Rule = defineRule({
   confidence: 'high',
   cwe: CWES.privilegeEscalation,
   description:
-    'A Supabase client created with `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security entirely. If the module can reach the browser bundle, an attacker can read and write every row in the database.',
+    'A Supabase client created with `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security entirely. If the module can reach the browser bundle, an attacker can read and write every row in the database. The client graph is a best-effort heuristic; review unresolved imports and use a server-only guard.',
   insecureExample: 'createClient(url, process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!)',
   secureExample: 'createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)',
   remediation: [
@@ -223,16 +223,16 @@ const supabaseServiceRoleClient: Rule = defineRule({
     return regexHits(ctx.code, /\b(?:createClient|createBrowserClient|createServerClient|createClientComponentClient|createRouteHandlerClient|createServerActionClient)\s*\(([^)]{0,400})\)/g, (match) => {
       const args = match[1] ?? '';
       if (!/(?:SERVICE_ROLE_KEY|SUPABASE_SERVICE_ROLE|SERVICE_ROLE_KEY|service_role|serviceRoleKey|SERVICE_KEY)/.test(args)) return null;
-      // `import "server-only"` is the framework's own guard: the build fails if
-      // this module is ever pulled into a client component.
-      if (SERVER_ONLY_GUARD_REGEX.test(ctx.code)) return null;
+      const client = isClientReachable(ctx);
+      const publicSecret = /(?:NEXT_PUBLIC_|VITE_|PUBLIC_|REACT_APP_|EXPO_PUBLIC_)[A-Za-z0-9_]*(?:SERVICE_ROLE|SERVICE_KEY)/i.test(args);
+      if (!client && !publicSecret) return null;
       return {
         matched: match[0].slice(0, 160),
-        severity: isBrowserFile(ctx) ? 'critical' : 'critical',
+        severity: 'critical',
         confidence: 'high',
-        message: isBrowserFile(ctx)
-          ? 'This file reaches the browser bundle, and the client is built with the RLS-bypassing service-role key.'
-          : 'Service-role clients must stay in server-only modules — confirm this file is never imported by a `"use client"` component.',
+        message: publicSecret
+          ? 'The privileged Supabase key uses a public environment prefix and can be exposed to a browser bundle.'
+          : 'This module is client-reachable, and the client is built with the RLS-bypassing service-role key.',
         data: { privilegedClient: true },
       };
     });

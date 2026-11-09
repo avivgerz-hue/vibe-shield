@@ -51,6 +51,7 @@ exports.mergeSqlTables = mergeSqlTables;
 exports.readGitTrackedPaths = readGitTrackedPaths;
 exports.detectProject = detectProject;
 const node_child_process_1 = require("node:child_process");
+const client_graph_1 = require("./client-graph");
 const node_fs_1 = require("node:fs");
 const path = __importStar(require("node:path"));
 const lexicon_1 = require("./lexicon");
@@ -485,12 +486,17 @@ async function detectProject(rootDir, options = {}) {
     const maxSqlBytes = options.maxSqlBytes ?? 512 * 1024;
     const skip = options.skip ?? (() => false);
     let sqlFilesRead = 0;
+    const sourceModules = [];
+    let clientGraphBytes = 0;
+    let clientGraphIncomplete = false;
     let hasGlobalAuthMiddleware = false;
     const authMiddlewareMatchers = [];
     const walk = async (dir, depth) => {
         const rel = posix(path.relative(rootDir, dir));
-        if (depth > maxDepth)
+        if (depth > maxDepth) {
+            clientGraphIncomplete = true;
             return;
+        }
         if (rel && skip(rel, true))
             return;
         let entries;
@@ -512,6 +518,22 @@ async function detectProject(rootDir, options = {}) {
                 continue;
             if (skip(entryRel, false))
                 continue;
+            if (/\.[cm]?[jt]sx?$/i.test(entry.name) && !TEST_PATH_REGEX.test(entryRel) && !GENERATED_REGEX.test(entryRel)) {
+                try {
+                    const file = path.join(dir, entry.name);
+                    const size = (await node_fs_1.promises.stat(file)).size;
+                    if (size > 512 * 1024 || sourceModules.length >= 10000 || clientGraphBytes + size > 20 * 1024 * 1024)
+                        clientGraphIncomplete = true;
+                    else {
+                        const content = await node_fs_1.promises.readFile(file, 'utf8');
+                        clientGraphBytes += size;
+                        sourceModules.push({ path: entryRel, code: (0, text_1.maskComments)(content, detectLanguage(entryRel, entry.name, (0, exports.extensionOf)(entry.name))) });
+                    }
+                }
+                catch {
+                    clientGraphIncomplete = true;
+                }
+            }
             if (MANIFEST_FILES.includes(entry.name)) {
                 const text = await readTextIfExists(path.join(dir, entry.name));
                 if (text)
@@ -541,10 +563,15 @@ async function detectProject(rootDir, options = {}) {
         }
     };
     await walk(rootDir, 0);
+    const configText = await readTextIfExists(path.join(rootDir, 'tsconfig.json')) ?? await readTextIfExists(path.join(rootDir, 'jsconfig.json'));
+    const parsedConfig = configText ? tolerantJsonParse(configText) : null;
+    const clientReachablePaths = (0, client_graph_1.clientReachableModules)(sourceModules, parsedConfig?.compilerOptions);
     const anyDependency = (regex) => dependencies.some((dep) => regex.test(dep));
     const trackedPaths = options.readGitIndex === false ? [] : readGitTrackedPaths(rootDir);
     return {
         rootDir,
+        clientReachablePaths,
+        clientGraphIncomplete,
         frameworks,
         dependencies,
         hasExpressServer: anyDependency(EXPRESS_DEPENDENCY_REGEX),

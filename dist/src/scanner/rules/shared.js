@@ -7,7 +7,7 @@
  * a `FileContext` and is unit-tested through the rules that consume it.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SELF_INSTALL_SPECS = exports.SELF_GITHUB_SPEC = exports.confident = exports.handlerBody = exports.checksRole = exports.isBrowserFile = exports.verifiesAuth = exports.LOGIC_SKIP_FLAGS = exports.isSchemaFile = exports.isDataFile = exports.SERVER_CODE_LANGUAGES = exports.JS_LANGUAGES = exports.CWES = exports.cwe = void 0;
+exports.SELF_INSTALL_SPECS = exports.SELF_GITHUB_SPEC = exports.confident = exports.handlerBody = exports.checksRole = exports.isClientReachable = exports.isBrowserFile = exports.verifiesAuth = exports.LOGIC_SKIP_FLAGS = exports.isSchemaFile = exports.isDataFile = exports.SERVER_CODE_LANGUAGES = exports.JS_LANGUAGES = exports.CWES = exports.cwe = void 0;
 exports.isApplicationCode = isApplicationCode;
 exports.offsetOf = offsetOf;
 exports.escalate = escalate;
@@ -104,6 +104,9 @@ exports.verifiesAuth = verifiesAuth;
 /** True when the file ships to the browser (client directive or client-ish path). */
 const isBrowserFile = (ctx) => ctx.flags.isClientComponent || ctx.flags.isClientPath;
 exports.isBrowserFile = isBrowserFile;
+/** Observed client code or a module reachable through the static import graph. */
+const isClientReachable = (ctx) => (0, exports.isBrowserFile)(ctx) || (ctx.project.clientReachablePaths?.includes(ctx.relativePath) ?? false);
+exports.isClientReachable = isClientReachable;
 /** True when `ctx` checks a role/permission/ownership claim. */
 const checksRole = (ctx) => lexicon_1.ROLE_CHECK_REGEX.test(ctx.code);
 exports.checksRole = checksRole;

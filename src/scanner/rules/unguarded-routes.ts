@@ -20,7 +20,6 @@ import {
   ROLE_CHECK_REGEX,
   ROUTE_AUTH_MIDDLEWARE_REGEX,
   SESSION_OWNERSHIP_REGEX,
-  UNTRUSTED_SOURCE_REGEX,
 } from '../lexicon';
 import { balancedBlock, escapeRegExp } from '../text';
 import { defineRule, fileHit } from './helpers';
@@ -35,16 +34,53 @@ const APP_ROUTER_VERB_REGEX =
 
 const MUTATING_VERBS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-/** Extract `{ verb, offset, body }` for every HTTP handler in an App Router file. */
-function appRouterHandlers(ctx: FileContext): Array<{ verb: string; offset: number; body: string }> {
-  const handlers: Array<{ verb: string; offset: number; body: string }> = [];
-  for (const match of ctx.code.matchAll(APP_ROUTER_VERB_REGEX)) {
+/** Extract each handler without mistaking destructured parameters for its body. */
+function appRouterHandlers(ctx: FileContext): Array<{ verb: string; offset: number; body: string; wrapped: boolean }> {
+  const handlers: Array<{ verb: string; offset: number; body: string; wrapped: boolean }> = [];
+  const matches = [...ctx.code.matchAll(APP_ROUTER_VERB_REGEX)];
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i]!;
     const verb = (match[1] ?? match[2] ?? '').toUpperCase();
-    const open = ctx.code.indexOf('{', match.index);
-    const body = open === -1 ? '' : balancedBlock(ctx.code, open, '{', '}');
-    handlers.push({ verb, offset: match.index, body });
+    const end = matches[i + 1]?.index ?? ctx.code.length;
+    const segment = ctx.code.slice(match.index, end);
+    const isConst = Boolean(match[2]);
+    const assignment = isConst ? segment.indexOf('=') : -1;
+    const initializer = assignment >= 0 ? segment.slice(assignment + 1) : '';
+    // Wrapper names are only heuristic signals, not proof of effective auth.
+    const wrapped = /^\s*(?:[A-Za-z_$][\w$]*\.)*with[A-Z_$][\w$]*\s*\(/.test(initializer);
+    let open = -1;
+    if (isConst) {
+      const arrow = initializer.indexOf('=>');
+      const semicolon = initializer.indexOf(';');
+      if (arrow >= 0 && (semicolon < 0 || arrow < semicolon)) open = ctx.code.indexOf('{', match.index + assignment + 1 + arrow + 2);
+    } else {
+      const paren = segment.indexOf('(', match[0].length);
+      if (paren >= 0) {
+        const params = balancedBlock(segment, paren, '(', ')');
+        open = ctx.code.indexOf('{', match.index + paren + params.length);
+      }
+    }
+    const body = open < 0 || open >= end ? '' : balancedBlock(ctx.code, open, '{', '}');
+    handlers.push({ verb, offset: match.index, body, wrapped });
   }
   return handlers;
+}
+
+/** Approximate block depth while ignoring braces inside quoted strings. */
+function blockDepth(source: string): number {
+  let depth = 0;
+  let quote = '';
+  let escaped = false;
+  for (const char of source) {
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = '';
+    } else if (char === "'" || char === '"' || char === '`') quote = char;
+    else if (char === '{') depth++;
+    else if (char === '}') depth--;
+  }
+  return depth;
 }
 
 /** Express/Fastify/Koa/Hono route registrations, with the handler body. */
@@ -99,7 +135,9 @@ const appRouterMutationNoAuth: Rule = defineRule({
     const hits: RuleHit[] = [];
     for (const handler of appRouterHandlers(ctx)) {
       if (!MUTATING_VERBS.has(handler.verb)) continue;
+      if (handler.wrapped) continue;
       if (AUTH_VERIFICATION_REGEX.test(handler.body)) continue;
+      if (/\bif\s*\(\s*!\s*(?:user|session)\b[^)]*\)\s*(?:\{\s*)?return\b[^;\n]{0,180}(?:401|unauthori[sz]ed)/i.test(handler.body)) continue;
       if (ROUTE_AUTH_MIDDLEWARE_REGEX.test(handler.body)) continue;
       // A webhook endpoint is authenticated by its signature, not a session.
       if (/\b(?:webhook|stripe|svix|github|clerk|lemonsqueezy|paddle)\b/i.test(ctx.relativePath) && /constructEvent|verifyWebhook|verifySignature|webhooks?\.|timingSafeEqual/i.test(handler.body)) continue;
@@ -228,65 +266,62 @@ const idorOwnershipFromRequest: Rule = defineRule({
   detect(ctx) {
     if (!ctx.flags.mentionsMutation) return [];
     const hits: RuleHit[] = [];
-    const ownershipNames = OWNERSHIP_KEY_REGEX.source.replace(/^\\b\(|\)\\b$/g, '');
+    const keys = OWNERSHIP_KEY_REGEX.source.replace(/^\\b\(|\)\\b$/g, '');
+    // Only request-derived values are tainted: a payload constructed from the
+    // verified user is not itself a request source just because it is named payload.
+    const sources = new Set(['body', 'params', 'query', 'searchParams', 'input', 'formData']);
+    for (const match of ctx.code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:req|request)\s*(?:\.\s*(?:json|formData)\s*\(|\.\s*(?:body|query|params)\b)/g)) sources.add(match[1]!);
+    const source = `(?:req(?:uest)?\\.(?:body|query|params)|ctx\\.(?:params|request\\.body)|event\\.body|${[...sources].map(escapeRegExp).join('|')})`;
+    const matches: Array<{ offset: number; key: string; text: string }> = [];
+    const record = (match: RegExpMatchArray, key: string): void => { matches.push({ offset: match.index!, key, text: match[0] }); };
+    // Only treat the request as an ownership risk when it supplies an actual
+    // ownership field, rather than any other property in the same object.
+    const assignment = new RegExp(`(?:\\b(${keys})\\b|['"\`](${keys})['"\`])\\s*[:=]\\s*(?:await\\s+)?${source}\\s*(?:\\?\\.|\\.|\\[)`, 'gi');
+    for (const match of ctx.code.matchAll(assignment)) record(match, match[1] ?? match[2] ?? 'owner');
+    const predicate = new RegExp(`\\b(?:eq|filter|where)\\s*\\(\\s*['"\`](${keys})['"\`]\\s*,\\s*${source}\\s*(?:\\?\\.|\\.|\\[)`, 'gi');
+    for (const match of ctx.code.matchAll(predicate)) record(match, match[1] ?? 'owner');
 
-    // 1. Direct read: `req.body.userId`, `searchParams.get("tenantId")`, ...
-    const direct = new RegExp(
-      `(?:${UNTRUSTED_SOURCE_REGEX.source})[^\\n;]{0,40}\\b(${ownershipNames})\\b`,
-      'gi',
-    );
-    for (const match of ctx.code.matchAll(direct)) {
-      const key = match[1] ?? '';
-      const line = ctx.lines[ctx.locate(match.index).line - 1] ?? '';
-      if (SESSION_OWNERSHIP_REGEX.test(line)) continue;
-      if (!/(?:where|filter|eq\(|match|delete|update|select|findFirst|findUnique|findOne|destroy|remove|insert|create)/i.test(line) && !ctx.flags.mentionsMutation) continue;
-      hits.push({
-        offset: match.index,
-        matched: match[0].slice(0, 120),
-        message: `\`${key}\` is read from the request and used for an ownership decision.`,
-        data: { key },
-      });
-    }
-
-    // 2. Indirect: `const { userId } = await req.json()` then `where: { userId }`.
-    //    This is the shape agents actually write, so resolving the local binding
-    //    is the difference between catching IDOR and catching nothing.
-    const taintedVars = new Map<string, string>();
-    const destructure = new RegExp(
-      `const\\s*\\{([^}]{1,200})\\}\\s*=\\s*(?:await\\s+)?(?:${UNTRUSTED_SOURCE_REGEX.source})`,
-      'gi',
-    );
+    // Follow ownership fields destructured from a request, including aliases,
+    // into a subsequent database use. Do not taint other fields in the object.
+    const tainted = new Map<string, string>();
+    const destructure = new RegExp(`\\b(?:const|let|var)\\s*\\{([^}]{1,200})\\}\\s*=\\s*(?:await\\s+)?(?:${source}|(?:req|request)\\.json\\s*\\()`, 'gi');
     for (const match of ctx.code.matchAll(destructure)) {
       for (const field of (match[1] ?? '').split(',')) {
-        const name = field.split(':').pop()?.split('=')[0]?.trim() ?? '';
-        if (!name || !OWNERSHIP_KEY_REGEX.test(name)) continue;
-        taintedVars.set(name, name);
+        const parts = field.trim().split(/\s*:\s*/);
+        const key = (parts[0] ?? '').trim();
+        const variable = (parts[1] ?? key).split('=')[0]!.trim();
+        if (OWNERSHIP_KEY_REGEX.test(key) && /^[A-Za-z_$][\w$]*$/.test(variable)) tainted.set(variable, key);
       }
     }
-    for (const match of ctx.code.matchAll(
-      /(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;\n]{0,120})/g,
-    )) {
-      const name = match[1] ?? '';
-      const value = match[2] ?? '';
-      if (!OWNERSHIP_KEY_REGEX.test(name)) continue;
-      if (!UNTRUSTED_SOURCE_REGEX.test(value)) continue;
-      taintedVars.set(name, name);
+    const assigned = new RegExp(`\\b(?:const|let|var)\\s+(${keys})\\s*=\\s*(?:await\\s+)?${source}\\s*(?:\\?\\.|\\.|\\[)`, 'gi');
+    for (const match of ctx.code.matchAll(assigned)) record(match, match[1] ?? 'owner');
+    // Follow a local alias only when it reaches an ownership field or predicate.
+    const aliases = new RegExp(`\\b(?:const|let|var)\\s+([A-Za-z_$][\\w$]*)\\s*=\\s*(?:await\\s+)?${source}\\s*(?:\\?\\.|\\.|\\[)`, 'gi');
+    for (const match of ctx.code.matchAll(aliases)) tainted.set(match[1]!, match[1]!);
+    for (const [variable, key] of tainted) {
+      const value = escapeRegExp(variable);
+      const property = new RegExp(`(?:\\b(?:${keys})\\b|['"\`](?:${keys})['"\`])\\s*[:=]\\s*${value}\\b|\\b(?:eq|filter|where)\\s*\\(\\s*['"\`](?:${keys})['"\`]\\s*,\\s*${value}\\b`, 'i').exec(ctx.code);
+      const shorthand = OWNERSHIP_KEY_REGEX.test(variable) ? new RegExp(`(?:where|filter|eq\\(|match|delete|update|select|findFirst|findUnique|findOne|destroy|remove|insert|upsert|create)[^\\n;]{0,120}\\b${value}\\b`, 'i').exec(ctx.code) : null;
+      const usage = property ?? shorthand;
+      if (usage) record(usage, key);
     }
-    for (const [variable, key] of taintedVars) {
-      const usage = new RegExp(
-        `(?:where|filter|eq\(|match|delete|update|select|findFirst|findUnique|findOne|destroy|remove|insert|create)[^\\n;]{0,80}\\b${escapeRegExp(variable)}\\b|\\b${escapeRegExp(variable)}\\b[^\\n;]{0,40}(?:where|filter)`,
-        'i',
-      );
-      const hit = usage.exec(ctx.code);
-      if (!hit) continue;
-      const line = ctx.lines[ctx.locate(hit.index).line - 1] ?? '';
-      if (SESSION_OWNERSHIP_REGEX.test(line)) continue;
-      hits.push({
-        offset: hit.index,
-        matched: line.trim().slice(0, 120),
-        message: `\`${key}\` is taken from the request body and used as the ownership predicate — any caller can address another user's record.`,
-        data: { key, variable },
-      });
+    const routes = ctx.flags.isAppRouterRoute ? [...ctx.code.matchAll(APP_ROUTER_VERB_REGEX)] : [];
+    for (const match of matches) {
+      // Recognize only a narrow, earlier mismatch-and-return guard for the
+      // identical request property in the same App Router handler. Broader
+      // comparisons or authorization hidden in helpers still need review.
+      const routeIndex = routes.findLastIndex(route => route.index! <= match.offset);
+      const start = routeIndex < 0 ? -1 : routes[routeIndex]!.index!;
+      const statement = ctx.code.slice(match.offset, match.offset + 160);
+      const requestAccess = new RegExp(`\\b${source}\\s*(?:\\?\\.|\\.)\\s*(?:${keys})\\b`, 'i').exec(statement)?.[0];
+      if (start >= 0 && requestAccess) {
+        const escaped = escapeRegExp(requestAccess);
+        const guard = new RegExp(`(?:^|[;{}\\n])\\s*if\\s*\\(\\s*${escaped}\\s*!==\\s*(?:user\\.id|session\\.user\\.id|session\\.userId)\\s*\\)\\s*(?:\\{\\s*)?(?:return|throw)\\b`, 'g');
+        const before = ctx.code.slice(start, match.offset);
+        const valid = [...before.matchAll(guard)].pop();
+        if (valid && blockDepth(before.slice(0, valid.index! + 1)) === 1 && blockDepth(before.slice(0, Math.max(before.lastIndexOf(';'), before.lastIndexOf('}')) + 1)) === 1 && !new RegExp(`${escaped}\\s*=(?!=)`).test(before.slice(valid.index! + valid[0].length))) continue;
+      }
+      hits.push({ offset: match.offset, matched: match.text.slice(0, 120), message: `\`${match.key}\` is taken from request data and may be used for an ownership decision.`, data: { key: match.key } });
     }
     return hits;
   },
@@ -410,6 +445,9 @@ const adminWithoutRoleCheck: Rule = defineRule({
   ],
   extensions: [...JS_ROUTE_EXTENSIONS, 'php', 'py', 'rb', 'go'],
   skipFlags: [...LOGIC_SKIP_FLAGS],
+  appliesTo: (ctx) => !ctx.flags.isClientComponent && (/\.(?:ts|js|mts|mjs|cts|cjs)$/i.test(ctx.relativePath)) &&
+    (/(?:^|\/)app\/api\/(?:[^/]+\/)*route\.[cm]?[jt]s$/i.test(ctx.relativePath) || ctx.flags.isPagesApiRoute || ctx.flags.isServerActionModule ||
+      (ctx.flags.isServerFrameworkFile && /\b(?:app|router|server|fastify|api|routes?|hono|route)\s*\.\s*(?:get|post|put|patch|delete|all)\s*\(/i.test(ctx.code))),
   detect(ctx) {
     const privilegedPath = ADMIN_PATH_REGEX.test(ctx.relativePath);
     const destructive = DESTRUCTIVE_CODE_REGEX.test(ctx.code);

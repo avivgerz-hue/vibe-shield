@@ -122,6 +122,9 @@ export interface SqlTableInfo {
 export interface ProjectContext {
     /** Absolute path of the scan root. */
     rootDir: string;
+    /** Best-effort static client graph, based on literal imports; omitted by older consumers. */
+    clientReachablePaths?: string[];
+    clientGraphIncomplete?: boolean;
     /** Frameworks/SDKs detected from package manifests and file layout. */
     frameworks: string[];
     /** `dependencies` + `devDependencies` names across discovered manifests. */

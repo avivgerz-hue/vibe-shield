@@ -111,6 +111,10 @@ export const isBrowserFile = (ctx: FileContext): boolean =>
   ctx.flags.isClientComponent || ctx.flags.isClientPath;
 
 
+/** Observed client code or a module reachable through the static import graph. */
+export const isClientReachable = (ctx: FileContext): boolean =>
+  isBrowserFile(ctx) || (ctx.project.clientReachablePaths?.includes(ctx.relativePath) ?? false);
+
 /** True when `ctx` checks a role/permission/ownership claim. */
 export const checksRole = (ctx: FileContext): boolean => ROLE_CHECK_REGEX.test(ctx.code);
 
