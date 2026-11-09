@@ -3,7 +3,7 @@
   "name": "io.github.avivgerz-hue/vibe-shield",
   "title": "vibe-shield \u2014 security scanner for AI-generated code",
   "description": "Scans AI-written code for leaked secrets, unguarded routes and missing RLS.",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "repository": {
     "url": "https://github.com/avivgerz-hue/vibe-shield",
     "source": "github"
@@ -13,7 +13,7 @@
     {
       "registryType": "npm",
       "identifier": "@vibefoundry/vibe-shield",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "transport": {
         "type": "stdio"
       }

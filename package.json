@@ -1,6 +1,6 @@
 {
   "name": "@vibefoundry/vibe-shield",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "High-speed static security analyzer and MCP/agent-skill guard for AI-generated codebases. Catches the vulnerabilities autonomous coding agents ship: leaked secrets, unguarded mutation routes, missing Postgres RLS, unverified webhooks, prompt injection sinks and XSS.",
   "keywords": [
     "mcp",
@@ -86,14 +86,16 @@
     "prepare": "node scripts/prepare.mjs",
     "prepublishOnly": "npm run verify"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.20.5",
     "@vitest/coverage-v8": "^5.1.0",
+    "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "dependencies": {}
 }

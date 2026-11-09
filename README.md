@@ -43,7 +43,7 @@ npx -y @vibefoundry/vibe-shield audit-skills --report agent-report.html
 
 Reports include severity, CWE, locations, snippets, OWASP 2025 web mappings for every rule and contextual LLM mappings when applicable, and illustrative remediation. Examples are **not** automatic project-specific patches; validate them against the application. The scanner itself is offline and read-only by default; `--cache`, `--out`, `--report`, `--patch-prompt` and `init` explicitly write files. Installing with `npx` can require network access. An A+ score applies only to the rules and files examined and is not a security certification.
 
-> npm `2.0.0` is already published and cannot be overwritten. It provides the scanner and MCP server but predates the universal `--agents` initializer in this repository. Use the GitHub `v2` ref for that setup until a newer npm version is published. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
+> The npm `2.0.0` artifact predates the universal `--agents` initializer. Use npm `2.1.0` or later (once published), or the GitHub `v2` ref. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
 
 ---
 
@@ -98,6 +98,10 @@ npx -y @vibefoundry/vibe-shield scan --fix-prompt   # → SECURITY_PATCH_PROMPT.
 That file contains, for every finding: the severity, the CWE id and link, the exact `file:line`, the vulnerable snippet, the ordered remediation steps, the target code shape, and a verification command. It is written for a machine to execute and a human to audit.
 
 ---
+
+## Browser security preview
+
+Open [the browser preview](https://avivgerz-hue.github.io/vibe-shield/) to check a pasted snippet or selected files in a public GitHub repository, without a backend. The page fetches repositories directly from the unauthenticated GitHub API; rate limits, large files, unsupported types and the 60-file/3 MB caps can make a result incomplete. Pasted code stays in the browser. The six browser heuristics and their preview score are **not** the 91-rule CLI scan and can miss security issues. Label browser badges as preview results and run the CLI for a fuller review. GitHub Pages must be enabled with the `docs/` folder as its source for the link to work.
 
 ## ⚡ Quick start
 
@@ -167,7 +171,7 @@ jobs:
           sarif_file: vibe-shield.sarif
 ```
 
-The action runs the published `@vibefoundry/vibe-shield@2.0.0` scanner, optionally audits skills, and fails if either enabled gate fails. SARIF upload is separate and requires GitHub code scanning support and appropriate permissions. The explicit target `.` includes tests and documentation, so review fixture findings in context.
+The action defaults to `@vibefoundry/vibe-shield@2.1.0` (the optional `version` input can select another npm version), optionally audits skills, and fails if either enabled gate fails. SARIF upload is separate and requires GitHub code scanning support and appropriate permissions. The explicit target `.` includes tests and documentation, so review fixture findings in context.
 
 ---
 

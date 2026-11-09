@@ -15,6 +15,7 @@ exports.createColorizer = createColorizer;
 exports.verdictLine = verdictLine;
 exports.renderConsoleReport = renderConsoleReport;
 exports.reportConsole = reportConsole;
+const star_footer_1 = require("./star-footer");
 const types_1 = require("../scanner/types");
 const ANSI = {
     red: [31, 39],
@@ -257,6 +258,7 @@ function renderConsoleReport(result, options = {}) {
     if (options.showStats !== false)
         lines.push(...renderStats(result, color));
     lines.push(...renderFooter(result, color));
+    lines.push((0, star_footer_1.starFooter)(result.stats.filesScanned ? result.score.grade : undefined).trimEnd());
     return lines;
 }
 /** Print the scorecard to a stream. */

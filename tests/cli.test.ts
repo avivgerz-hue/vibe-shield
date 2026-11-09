@@ -646,3 +646,56 @@ describe('--mcp alias', () => {
     expect(parsed.unknown).toContain('--not-a-real-flag');
   });
 });
+
+describe('star CTA and badge', () => {
+  it('shows the scan grade and a usable GitHub CLI star command on console output', async () => {
+    const project = makeProject({ 'index.ts': 'export const answer = 42;\n' });
+    try {
+      const io = makeIo(project.root);
+      await run(['scan'], io);
+      expect(io.out()).toContain('★ Found Vibe-Shield useful? Star the repo on GitHub:');
+      expect(io.out()).toContain('gh api --method PUT -H "Content-Length: 0" /user/starred/avivgerz-hue/vibe-shield');
+      expect(io.out()).toContain('Grade_A%2B-10b981');
+    } finally { project.cleanup(); }
+  });
+  it('shows audit output and reflects a failing scan grade in the badge', async () => {
+    const project = makeProject(vulnerableApp());
+    try {
+      const scan = makeIo(project.root); await run(['scan'], scan);
+      expect(scan.out()).toContain('Grade_F-ef4444');
+      const audit = makeIo(project.root); await run(['audit-skills'], audit);
+      expect(audit.out()).toContain('Found Vibe-Shield useful');
+    } finally { project.cleanup(); }
+  });
+  it('does not contaminate JSON, SARIF, summary or quiet output', async () => {
+    const project = makeProject({ 'index.ts': 'export const answer = 42;\n', '.mcp.json': '{"mcpServers":{}}' });
+    try {
+      for (const command of ['scan', 'audit-skills']) for (const format of ['json','sarif','summary']) {
+        const io = makeIo(project.root);
+        await run([command,'--format',format,'--quiet'],io);
+        expect(() => JSON.parse(io.out())).not.toThrow();
+        expect(io.out()).not.toContain('Found Vibe-Shield useful');
+      }
+      const io = makeIo(project.root); await run(['scan','--quiet'],io);
+      expect(io.out().trim().split('\n')).toHaveLength(1);
+    } finally { project.cleanup(); }
+  });
+  it('includes a labeled agent-audit grade for init, and emits pure JSON for init --json', async () => {
+    const project = makeProject({});
+    try {
+      const io = makeIo(project.root); await run(['init','--no-workflow'],io);
+      expect(io.out()).toContain('README badge (agent audit)');
+      expect(io.out()).toContain('Grade_A%2B-10b981');
+      const json = makeIo(project.root); await run(['init','--json','--no-workflow'],json);
+      expect(() => JSON.parse(json.out())).not.toThrow();
+      expect(json.out()).not.toContain('Found Vibe-Shield useful');
+      const sarif = makeIo(project.root); expect(await run(['init','--format','sarif'],sarif)).toBe(2);
+      expect(sarif.out()).toBe('');
+    } finally { project.cleanup(); }
+  });
+  it('does not generate a badge for an empty scan', async () => {
+    const project = makeProject({});
+    try { const io=makeIo(project.root); await run(['scan'],io); expect(io.out()).toContain('Run a scan to get a grade'); expect(io.out()).not.toContain('img.shields.io'); }
+    finally { project.cleanup(); }
+  });
+});

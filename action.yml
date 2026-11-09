@@ -5,6 +5,9 @@ branding:
   icon: shield
   color: purple
 inputs:
+  version:
+    description: npm version of Vibe-Shield to run.
+    default: '2.1.0'
   target:
     description: Project directory or file to scan.
     default: '.'
@@ -25,15 +28,16 @@ runs:
       shell: bash
       continue-on-error: true
       env:
+        VIBE_VERSION: ${{ inputs.version }}
         VIBE_TARGET: ${{ inputs.target }}
         VIBE_FAIL_ON: ${{ inputs.fail-on }}
         VIBE_SARIF_FILE: ${{ inputs.sarif-file }}
       run: |
         set -euo pipefail
         if [[ -n "$VIBE_SARIF_FILE" ]]; then
-          npx -y @vibefoundry/vibe-shield@2.0.0 scan "$VIBE_TARGET" --fail-on "$VIBE_FAIL_ON" --format sarif --out "$VIBE_SARIF_FILE"
+          npx -y "@vibefoundry/vibe-shield@$VIBE_VERSION" scan "$VIBE_TARGET" --fail-on "$VIBE_FAIL_ON" --format sarif --out "$VIBE_SARIF_FILE"
         else
-          npx -y @vibefoundry/vibe-shield@2.0.0 scan "$VIBE_TARGET" --fail-on "$VIBE_FAIL_ON"
+          npx -y "@vibefoundry/vibe-shield@$VIBE_VERSION" scan "$VIBE_TARGET" --fail-on "$VIBE_FAIL_ON"
         fi
     - name: Audit agent configurations
       id: audit
@@ -41,11 +45,12 @@ runs:
       shell: bash
       continue-on-error: true
       env:
+        VIBE_VERSION: ${{ inputs.version }}
         VIBE_TARGET: ${{ inputs.target }}
         VIBE_FAIL_ON: ${{ inputs.fail-on }}
       run: |
         set -euo pipefail
-        npx -y @vibefoundry/vibe-shield@2.0.0 audit-skills "$VIBE_TARGET" --fail-on "$VIBE_FAIL_ON"
+        npx -y "@vibefoundry/vibe-shield@$VIBE_VERSION" audit-skills "$VIBE_TARGET" --fail-on "$VIBE_FAIL_ON"
     - name: Enforce security gate
       if: ${{ always() }}
       shell: bash

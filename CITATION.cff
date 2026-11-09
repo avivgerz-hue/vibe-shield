@@ -8,7 +8,7 @@ abstract: >-
   with no authentication, Postgres tables without Row Level Security,
   SQL injection, unverified webhooks, prompt-injection sinks and poisoned
   agent skills or MCP servers — and reports them with an exact file, line,
-  CWE and ordered remediation steps. It ships 60 detection signatures, a
+  CWE and ordered remediation steps. It ships 91 detection signatures, a
   Model Context Protocol server, SARIF 2.1.0 export for CI code scanning, and
   an Agent Skill that forces an audit before a task is reported complete.
 type: software
@@ -16,12 +16,12 @@ authors:
   - name: "VibeFoundry"
     alias: avivgerz-hue
     website: "https://github.com/avivgerz-hue"
-version: "2.0.0"
+version: "2.1.0"
 date-released: "2026-11-07"
 license: MIT
 url: "https://github.com/avivgerz-hue/vibe-shield"
 repository-code: "https://github.com/avivgerz-hue/vibe-shield"
-repository-artifact: "https://www.npmjs.com/package/vibe-shield"
+repository-artifact: "https://www.npmjs.com/package/@vibefoundry/vibe-shield"
 keywords:
   - static analysis
   - application security

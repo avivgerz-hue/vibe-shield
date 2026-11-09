@@ -20,6 +20,7 @@ import { auditSkills } from '../src/mcp-guard/skill-auditor';
 import { serveMcp } from '../src/mcp/server';
 import { AGENT_NAMES, installScaffold, type AgentName } from '../src/init/scaffold';
 import { reportConsole, createColorizer } from '../src/reporter/console-reporter';
+import { starFooter } from '../src/reporter/star-footer';
 import { formatResult, isOutputFormat, OUTPUT_FORMATS, type OutputFormat } from '../src/reporter/formatters';
 import { writePatchPrompt, PATCH_PROMPT_FILENAME } from '../src/reporter/patch-prompt-writer';
 import { hasFindingsAtOrAbove, packageVersion, scanProject } from '../src/scanner/engine';
@@ -254,7 +255,7 @@ async function emitReport(
     });
   }
 
-  if (options.quiet) {
+  if (options.quiet && options.format === 'console') {
     // One line: verdict + counts. Machine-friendly and CI-log friendly.
     const counts = result.score.counts;
     const files = `${result.stats.filesScanned} ${result.stats.filesScanned === 1 ? 'file' : 'files'}`;
@@ -410,6 +411,11 @@ async function commandAuditSkills(parsed: ParsedArgs, io: CliIo): Promise<number
 }
 
 async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
+  const format = flagBool(parsed, 'json') ? 'json' : (flagString(parsed, 'format') ?? 'console').toLowerCase();
+  if (format !== 'console' && format !== 'json') {
+    write(io, 'stderr', 'vibe-shield: init supports --format console or json (SARIF is a scan report format)\n');
+    return EXIT_USAGE;
+  }
   const target = path.resolve(io.cwd, flagString(parsed, 'target') ?? '.');
   if (flagString(parsed, 'agents') && flagString(parsed, 'agent')) {
     write(io, 'stderr', 'vibe-shield: use --agent or --agents, not both\n');
@@ -431,6 +437,10 @@ async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
     env: io.env,
   });
 
+  if (format === 'json') {
+    write(io, 'stdout', `${JSON.stringify(result, null, 2)}\n`);
+    return EXIT_OK;
+  }
   const color = createColorizer(io.stdout);
   if (flagBool(parsed, 'no-color')) color.enabled = false;
 
@@ -444,7 +454,15 @@ async function commandInit(parsed: ParsedArgs, io: CliIo): Promise<number> {
   write(io, 'stdout', `\n${color.bold('Next steps')}\n`);
   write(io, 'stdout', `  1. ${color.dim('npx -y @vibefoundry/vibe-shield scan')}                 ${color.dim('# baseline your repo')}\n`);
   write(io, 'stdout', `  2. ${color.dim('npx -y @vibefoundry/vibe-shield scan --fix-prompt')}   ${color.dim('# generate the fix list')}\n`);
-  write(io, 'stdout', `  3. Commit the new files — your agent now audits before it says "done".\n\n`);
+  write(io, 'stdout', `  3. Commit the new files — your agent now audits before it says "done".\n`);
+  // Init itself has no application scan grade. Audit the installed agent files and
+  // label the resulting badge so it cannot be mistaken for a project scan.
+  try {
+    const audit = await auditSkills(target, { version: await packageVersion() });
+    write(io, 'stdout', starFooter(audit.stats.filesScanned ? audit.score.grade : undefined, 'agent audit'));
+  } catch {
+    write(io, 'stdout', starFooter());
+  }
   return EXIT_OK;
 }
 

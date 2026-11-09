@@ -24,9 +24,9 @@ describe('universal agent setup', () => {
     try {
       expect(await run(['init','--agents','all','--no-workflow'],io(p.root))).toBe(0);
       for (const f of files) expect(existsSync(path.join(p.root,f)), f).toBe(true);
-      expect(readJson(p.root,'opencode.json').mcp['vibe-shield']).toEqual({type:'local',command:['npx','--yes','@vibefoundry/vibe-shield@2.0.0','mcp'],enabled:true});
+      expect(readJson(p.root,'opencode.json').mcp['vibe-shield']).toEqual({type:'local',command:['npx','--yes','@vibefoundry/vibe-shield@2.1.0','mcp'],enabled:true});
       expect(readJson(p.root,'.vscode/mcp.json').servers['vibe-shield'].type).toBe('stdio');
-      expect(readJson(p.root,'.zed/settings.json').context_servers['vibe-shield'].args).toContain('@vibefoundry/vibe-shield@2.0.0');
+      expect(readJson(p.root,'.zed/settings.json').context_servers['vibe-shield'].args).toContain('@vibefoundry/vibe-shield@2.1.0');
       expect(readJson(p.root,'.claude-plugin/plugin.json').skills).toBe('./.claude/skills/');
       const result = await auditSkills(p.root);
       for (const f of ['opencode.json','.vscode/mcp.json','.zed/settings.json','.github/copilot-instructions.md']) expect(result.scannedPaths).toContain(f);
@@ -64,7 +64,7 @@ describe('universal agent setup', () => {
       expect(readFileSync(path.join(p.root,'.cursor/mcp.json'),'utf8')).toBe('{ invalid');
       expect(readJson(p.root,'opencode.json').theme).toBe('night');
       expect(readJson(p.root,'opencode.json').mcp.other.command).toEqual(['other']);
-      expect(readJson(p.root,'opencode.json').mcp['vibe-shield'].command[2]).toBe('@vibefoundry/vibe-shield@2.0.0');
+      expect(readJson(p.root,'opencode.json').mcp['vibe-shield'].command[2]).toBe('@vibefoundry/vibe-shield@2.1.0');
       expect(readJson(p.root,'.zed/settings.json').context_servers.other.command).toBe('keep');
       expect(readJson(p.root,'.zed/settings.json').font_size).toBe(17);
     } finally {p.cleanup();}
@@ -105,9 +105,9 @@ describe('Marketplace composite action', () => {
       chmodSync(path.join(p.root,'bin/npx'),0o755);
       const capture=path.join(p.root,'args.txt');
       const target='path with spaces; touch SHOULD_NOT_EXIST';
-      const env={...process.env,PATH:`${path.join(p.root,'bin')}:${process.env.PATH}`,CAPTURE:capture,VIBE_TARGET:target,VIBE_FAIL_ON:'high',VIBE_SARIF_FILE:'report with spaces.sarif'};
+      const env={...process.env,PATH:`${path.join(p.root,'bin')}:${process.env.PATH}`,CAPTURE:capture,VIBE_VERSION:'2.1.0',VIBE_TARGET:target,VIBE_FAIL_ON:'high',VIBE_SARIF_FILE:'report with spaces.sarif'};
       execFileSync('bash',['-c',runBlocks[0]!],{cwd:p.root,env});
-      expect(readFileSync(capture,'utf8').trim().split('\n')).toEqual(['-y','@vibefoundry/vibe-shield@2.0.0','scan',target,'--fail-on','high','--format','sarif','--out','report with spaces.sarif']);
+      expect(readFileSync(capture,'utf8').trim().split('\n')).toEqual(['-y','@vibefoundry/vibe-shield@2.1.0','scan',target,'--fail-on','high','--format','sarif','--out','report with spaces.sarif']);
       expect(existsSync(path.join(p.root,'SHOULD_NOT_EXIST'))).toBe(false);
       execFileSync('bash',['-c',runBlocks[1]!],{cwd:p.root,env});
       expect(readFileSync(capture,'utf8')).toContain('audit-skills\n'+target+'\n');

@@ -9,6 +9,7 @@
  * output survives CI logs, `--no-color`, and screen readers.
  */
 
+import { starFooter } from './star-footer';
 import type { Finding, ScanResult, Severity } from '../scanner/types';
 import { CATEGORY_TITLES, SEVERITY_WEIGHT } from '../scanner/types';
 
@@ -296,6 +297,7 @@ export function renderConsoleReport(result: ScanResult, options: ReportOptions =
   }
   if (options.showStats !== false) lines.push(...renderStats(result, color));
   lines.push(...renderFooter(result, color));
+  lines.push(starFooter(result.stats.filesScanned ? result.score.grade : undefined).trimEnd());
   return lines;
 }
 
