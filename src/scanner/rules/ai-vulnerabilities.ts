@@ -858,6 +858,42 @@ const insecureDeserialization: Rule = defineRule({
   },
 });
 
+/** A bounded local heuristic: it does not prove the cap is effective or affordable. */
+const llmOutputTokenCap: Rule = defineRule({
+  id: 'VSB-AI-016',
+  slug: 'llm-route-without-output-token-cap',
+  title: 'LLM route has no visible fixed output token cap',
+  category: 'ai-vulnerabilities',
+  severity: 'medium',
+  confidence: 'low',
+  cwe: CWES.resourceExhaustion,
+  description: 'A paid model call without an observable output token cap can amplify the cost of each request. This heuristic only checks recognized calls for a positive numeric literal in the local call arguments; limits configured in shared code or provider settings require manual review.',
+  insecureExample: 'await openai.chat.completions.create({ model, messages });',
+  secureExample: 'await openai.chat.completions.create({ model, messages, max_completion_tokens: 512 });',
+  remediation: [
+    'Set a server-controlled output token limit on each model request, using the parameter supported by the model and SDK.',
+    'Independently enforce input/context limits, per-user rate and spending quotas, timeouts, and provider budget alerts.',
+    'Review shared wrappers, dynamic limits, SDK defaults and provider-side limits manually; this check cannot verify their effectiveness.',
+  ],
+  references: ['https://cwe.mitre.org/data/definitions/770.html', 'https://owasp.org/www-project-top-10-for-large-language-model-applications/'],
+  extensions: ['ts', 'tsx', 'js', 'jsx', 'mts', 'mjs', 'cts', 'cjs'],
+  skipFlags: [...LOGIC_SKIP_FLAGS],
+  appliesTo: isPublicEndpoint,
+  contentHints: [/chat\.completions\.create|messages\.create|generateText|streamText|generateObject|streamObject/],
+  detect(ctx) {
+    const hits: RuleHit[] = [];
+    const calls = /\b(?:[\w$]+\.chat\.completions\.create|[\w$]+\.messages\.create|generateText|streamText|generateObject|streamObject)\s*\(/g;
+    for (const match of ctx.code.matchAll(calls)) {
+      const args = callArgs(ctx, match.index);
+      // Numeric literals are a signal, not proof of execution order or a safe budget.
+      const cap = /\b(?:max_tokens|max_completion_tokens|maxTokens|maxOutputTokens)\s*:\s*([1-9]\d*)\s*(?=[,}])/i;
+      if (cap.test(args)) continue;
+      hits.push({ offset: match.index, matched: match[0], message: 'No positive literal output token cap was observed in this model call. Review wrappers, dynamic values and provider-side limits.' });
+    }
+    return hits;
+  },
+});
+
 export const AI_VULNERABILITY_RULES: readonly Rule[] = [
   commandInjection,
   toolExecuteSink,
@@ -874,4 +910,5 @@ export const AI_VULNERABILITY_RULES: readonly Rule[] = [
   unrestrictedUpload,
   llmRateLimit,
   insecureDeserialization,
+  llmOutputTokenCap,
 ];

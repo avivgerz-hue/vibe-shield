@@ -202,7 +202,7 @@ describe('init writes the mcp config', () => {
 describe('repository MCP pin', () => {
   it('pins the published v2 scoped version', () => {
     const config = readJson<{ mcpServers: { 'vibe-shield': { command: string; args: string[] } } }>('.mcp.json');
-    expect(config.mcpServers['vibe-shield']).toEqual({ command: 'npx', args: ['--yes', '@vibefoundry/vibe-shield@2.0.0', 'mcp'] });
+    expect(config.mcpServers['vibe-shield']).toEqual({ command: 'npx', args: ['--yes', '@vibefoundry/vibe-shield@2.1.0', 'mcp'] });
   });
 });
 

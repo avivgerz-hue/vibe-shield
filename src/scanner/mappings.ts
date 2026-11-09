@@ -28,7 +28,7 @@ const llmNames: Record<string, string> = {
 };
 const llmByRule: Record<string, string[]> = {
   'VSB-AI-002':['LLM05','LLM06'], 'VSB-AI-003':['LLM05'], 'VSB-AI-004':['LLM01'],
-  'VSB-AI-008':['LLM05'], 'VSB-AI-014':['LLM10'],
+  'VSB-AI-008':['LLM05'], 'VSB-AI-014':['LLM10'], 'VSB-AI-016':['LLM10'],
   'VSB-AGENT-001':['LLM01'], 'VSB-AGENT-002':['LLM01','LLM02'], 'VSB-AGENT-003':['LLM01','LLM02'],
   'VSB-AGENT-004':['LLM03'], 'VSB-AGENT-005':['LLM02'], 'VSB-AGENT-006':['LLM01'],
   'VSB-AGENT-007':['LLM06'], 'VSB-AGENT-008':['LLM05','LLM06'], 'VSB-AGENT-009':['LLM01','LLM03'],

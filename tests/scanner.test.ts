@@ -50,7 +50,7 @@ describe('rule catalogue', () => {
       ...Array.from({ length: 7 }, (_, i) => `VSB-CLIENT-00${i + 1}`),
       ...Array.from({ length: 9 }, (_, i) => `VSB-AUTH-00${i + 1}`),
       ...Array.from({ length: 10 }, (_, i) => `VSB-DB-0${String(i + 1).padStart(2, '0')}`),
-      ...Array.from({ length: 15 }, (_, i) => `VSB-AI-0${String(i + 1).padStart(2, '0')}`),
+      ...Array.from({ length: 16 }, (_, i) => `VSB-AI-0${String(i + 1).padStart(2, '0')}`),
       ...Array.from({ length: 7 }, (_, i) => `VSB-SECRET-00${i + 1}`),
       ...Array.from({ length: 12 }, (_, i) => `VSB-AGENT-0${String(i + 1).padStart(2, '0')}`),
     ];
@@ -877,5 +877,27 @@ describe('helpers', () => {
     const deduped = dedupe([base, { ...base, snippet: 'two' }]);
     expect(deduped).toHaveLength(1);
     expect(deduped[0]?.snippet).toBe('one');
+  });
+});
+
+describe('LLM output token caps', () => {
+  it('reports uncapped and dynamic caps per call but accepts a positive literal cap', async () => {
+    const p = makeProject({
+      'app/api/chat/route.ts': `import OpenAI from 'openai';
+export async function POST() {
+  const client = new OpenAI();
+  await client.chat.completions.create({ model: 'x', messages: [] });
+  await client.chat.completions.create({ model: 'x', max_completion_tokens: 512, messages: [] });
+  await client.chat.completions.create({ model: 'x', max_completion_tokens: input, messages: [] });
+  await client.chat.completions.create({ model: 'x', max_tokens: 0, messages: [] });
+}`,
+    });
+    try {
+      const result = await scanProject({ rootDir: p.root, useGitIndex: false });
+      const hits = result.findings.filter(f => f.ruleId === 'VSB-AI-016');
+      expect(hits).toHaveLength(3);
+      expect(hits.map(f => f.line)).toEqual([4, 6, 7]);
+      expect(hits[0]!.owasp!.llm.map(m => m.id)).toContain('LLM10:2025');
+    } finally { p.cleanup(); }
   });
 });

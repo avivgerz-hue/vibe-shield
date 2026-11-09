@@ -1,5 +1,4 @@
-import { execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { run, type CliIo } from '../bin/vibe-shield';
@@ -88,32 +87,7 @@ describe('universal agent setup', () => {
   });
 });
 
-describe('Marketplace composite action', () => {
-  const action=readFileSync(path.join(__dirname,'../action.yml'),'utf8');
-  const runBlocks=Array.from(action.matchAll(/^      run: \|\n((?:        .*\n|\n)+)/gm), m=>m[1]!.split('\n').map(line=>line.startsWith('        ')?line.slice(8):line).join('\n'));
-  it('declares Marketplace branding, supported inputs, and a composite action', () => {
-    expect(action).toMatch(/branding:\s*\n\s+icon: shield\s*\n\s+color: purple/);
-    for(const input of ['target','fail-on','audit-skills','sarif-file']) expect(action).toContain(`  ${input}:`);
-    expect(action).toContain('using: composite');
-    expect(readFileSync(path.join(__dirname,'../.claude/skills/vibe-shield/SKILL.md'),'utf8')).toBe(readFileSync(path.join(__dirname,'../SKILL.md'),'utf8'));
-    expect(runBlocks).toHaveLength(3);
-    expect(action).toContain("if: ${{ always() }}");
-  });
-  it('quotes untrusted inputs, passes SARIF options, and propagates failed gates', () => {
-    const p=makeProject({'bin/npx':'#!/bin/sh\nprintf "%s\\n" "$@" > "$CAPTURE"\nexit "${NPX_EXIT:-0}"\n'});
-    try {
-      chmodSync(path.join(p.root,'bin/npx'),0o755);
-      const capture=path.join(p.root,'args.txt');
-      const target='path with spaces; touch SHOULD_NOT_EXIST';
-      const env={...process.env,PATH:`${path.join(p.root,'bin')}:${process.env.PATH}`,CAPTURE:capture,VIBE_VERSION:'2.1.0',VIBE_TARGET:target,VIBE_FAIL_ON:'high',VIBE_SARIF_FILE:'report with spaces.sarif'};
-      execFileSync('bash',['-c',runBlocks[0]!],{cwd:p.root,env});
-      expect(readFileSync(capture,'utf8').trim().split('\n')).toEqual(['-y','@vibefoundry/vibe-shield@2.1.0','scan',target,'--fail-on','high','--format','sarif','--out','report with spaces.sarif']);
-      expect(existsSync(path.join(p.root,'SHOULD_NOT_EXIST'))).toBe(false);
-      execFileSync('bash',['-c',runBlocks[1]!],{cwd:p.root,env});
-      expect(readFileSync(capture,'utf8')).toContain('audit-skills\n'+target+'\n');
-      expect(() => execFileSync('bash',['-c',runBlocks[2]!],{cwd:p.root,env:{...env,VIBE_SCAN_OUTCOME:'failure',VIBE_AUDIT_OUTCOME:'success',VIBE_AUDIT_ENABLED:'true'},stdio:'pipe'})).toThrow();
-      expect(() => execFileSync('bash',['-c',runBlocks[2]!],{cwd:p.root,env:{...env,VIBE_SCAN_OUTCOME:'success',VIBE_AUDIT_OUTCOME:'skipped',VIBE_AUDIT_ENABLED:'false'},stdio:'pipe'})).not.toThrow();
-      writeFileSync(capture,'');
-    } finally {p.cleanup();}
-  });
+
+it('keeps the repository Claude skill in sync with the canonical skill', () => {
+  expect(readFileSync(path.join(__dirname, '../.claude/skills/vibe-shield/SKILL.md'), 'utf8')).toBe(readFileSync(path.join(__dirname, '../SKILL.md'), 'utf8'));
 });

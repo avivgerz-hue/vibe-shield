@@ -8,7 +8,7 @@ abstract: >-
   with no authentication, Postgres tables without Row Level Security,
   SQL injection, unverified webhooks, prompt-injection sinks and poisoned
   agent skills or MCP servers — and reports them with an exact file, line,
-  CWE and ordered remediation steps. It ships 91 detection signatures, a
+  CWE and ordered remediation steps. It ships 92 detection signatures, a
   Model Context Protocol server, SARIF 2.1.0 export for CI code scanning, and
   an Agent Skill that forces an audit before a task is reported complete.
 type: software

@@ -14,7 +14,7 @@ vibe-shield is a **static security scanner built for that failure mode**, plus a
 [![node](https://img.shields.io/badge/node-%E2%89%A518.17.0-5fa04e?style=flat-square&logo=nodedotjs)](#-requirements)
 [![license](https://img.shields.io/github/license/avivgerz-hue/vibe-shield?style=flat-square&color=blue)](./LICENSE)
 [![zero dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen?style=flat-square)](./package.json)
-[![rules](https://img.shields.io/badge/detection%20signatures-91-8b5cf6?style=flat-square)](./src/scanner/rules)
+[![rules](https://img.shields.io/badge/detection%20signatures-92-8b5cf6?style=flat-square)](./src/scanner/rules)
 [![self-scan](https://img.shields.io/badge/self--scan-100%2F100%20A%2B-16a34a?style=flat-square)](#-it-scans-itself)
 
 ```bash
@@ -99,10 +99,6 @@ That file contains, for every finding: the severity, the CWE id and link, the ex
 
 ---
 
-## Browser security preview
-
-Open [the browser preview](https://avivgerz-hue.github.io/vibe-shield/) to check a pasted snippet or selected files in a public GitHub repository, without a backend. The page fetches repositories directly from the unauthenticated GitHub API; rate limits, large files, unsupported types and the 60-file/3 MB caps can make a result incomplete. Pasted code stays in the browser. The six browser heuristics and their preview score are **not** the 91-rule CLI scan and can miss security issues. Label browser badges as preview results and run the CLI for a fuller review. GitHub Pages must be enabled with the `docs/` folder as its source for the link to work.
-
 ## ⚡ Quick start
 
 ```bash
@@ -146,35 +142,6 @@ To configure selected agents, substitute a comma-separated list such as `--agent
 
 The existing `--agent claude|cursor|generic|all` remains supported. The shared `.mcp.json`, ignore file, and (unless `--no-workflow` is set) CI workflow are also installed. JSON configuration is merged by server name; malformed JSON or JSON with comments is left untouched and reported. Existing instructions are appended only once, and existing files are not overwritten without `--force`. Restart the relevant editor or reload its configuration after setup.
 
-### GitHub Marketplace Action
-
-```yaml
-name: Security audit
-on: [push, pull_request]
-permissions:
-  contents: read
-  security-events: write
-jobs:
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: avivgerz-hue/vibe-shield@v2
-        with:
-          target: .
-          fail-on: high
-          audit-skills: 'true'
-          sarif-file: vibe-shield.sarif
-      - uses: github/codeql-action/upload-sarif@v3
-        if: ${{ always() && hashFiles('vibe-shield.sarif') != '' }}
-        with:
-          sarif_file: vibe-shield.sarif
-```
-
-The action defaults to `@vibefoundry/vibe-shield@2.1.0` (the optional `version` input can select another npm version), optionally audits skills, and fails if either enabled gate fails. SARIF upload is separate and requires GitHub code scanning support and appropriate permissions. The explicit target `.` includes tests and documentation, so review fixture findings in context.
-
----
-
 ## 🧠 Why AI code needs its own scanner
 
 Traditional SAST rules are built around human mistakes: a forgotten escape, a missing `prepare()`. Agent-written code fails differently — it is *confidently complete* and *structurally plausible*:
@@ -187,13 +154,13 @@ Traditional SAST rules are built around human mistakes: a forgotten escape, a mi
 | writes `CREATE TABLE` | writes `CREATE TABLE` **and forgets the `ENABLE ROW LEVEL SECURITY`**, so the anon key reads everything |
 | adds `dangerouslySetInnerHTML` to render a doc | renders **model output** with it, creating stored XSS with a step counter |
 
-vibe-shield encodes those specific shapes: 91 signatures across eight defensive categories, each one derived from a real agent-generated bug rather than a generic CWE checklist.
+vibe-shield encodes those specific shapes: 92 signatures across eight defensive categories, each one derived from a real agent-generated bug rather than a generic CWE checklist.
 
 ---
 
 ## 📊 Vulnerability Coverage Matrix
 
-**79 code signatures + 12 agent-integrity signatures = 91.** Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and an OWASP association — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
+**80 code signatures + 12 agent-integrity signatures = 92.** Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and an OWASP association — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
 
 ### Client-side secret & data exposure — `VSB-CLIENT-*`
 
@@ -257,6 +224,7 @@ vibe-shield encodes those specific shapes: 91 signatures across eight defensive 
 | `VSB-AI-013` | multer/`formData()` upload with no size or type limit | [CWE-434](https://cwe.mitre.org/data/definitions/434.html) | medium |
 | `VSB-AI-014` | public LLM endpoint with no rate limit or quota | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | medium |
 | `VSB-AI-015` | `pickle.loads`, `yaml.load` without `SafeLoader`, PHP `unserialize` | [CWE-502](https://cwe.mitre.org/data/definitions/502.html) | high |
+| `VSB-AI-016` | recognized LLM route call without a visible positive literal output token cap; review dynamic or provider limits | [CWE-770](https://cwe.mitre.org/data/definitions/770.html) | medium |
 
 ### Hardcoded credentials — `VSB-SECRET-*`
 
@@ -360,7 +328,7 @@ The skill itself is [SKILL.md](./SKILL.md) — read it, it is short.
 ### Anthropic Agent Skills quickstart
 
 ```bash
-# marketplace-style install
+# install the Claude Code skill
 npx -y @vibefoundry/vibe-shield init --agent claude
 # → .claude/skills/vibe-shield/SKILL.md
 
@@ -502,7 +470,7 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 ```
  discover ──▶ project context ──▶ rule gate ──▶ detect ──▶ suppress ──▶ score ──▶ report
    │              │                  │           │
-   │              │                  │           └─ 91 rules, each a pure (FileContext) => RuleHit[]
+   │              │                  │           └─ 92 rules, each a pure (FileContext) => RuleHit[]
    │              │                  └─ cheap content hints: most rules skip most files
    │              └─ manifests, framework flags, cross-file RLS index, git index, middleware matchers
    └─ one tree walk, gitignore/.vibe-shieldignore layering, binary + size + test/doc pruning
