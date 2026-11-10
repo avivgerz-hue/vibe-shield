@@ -1,29 +1,33 @@
-<div align="center">
-
 # 🛡️ vibe-shield
 
-**The security gate for AI-written code.**
+**The security gate for AI-written code.** Find exposed secrets, unguarded routes and missing RLS before you ship.
 
-Your agent ships fast. It also ships `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`, a `DELETE` route with no session check, and a `CREATE TABLE` with no Row Level Security — because it was optimising for "it works".
-
-vibe-shield is a **static security scanner built for that failure mode**, plus an **Agent Skill** that makes Claude Code, Codex, Cursor and Windsurf audit before they say *"done"*.
+> ⭐ **If this tool helps your AI coding workflow, please give this repository a Star!** It helps more developers discover the project.
 
 [![npm version](https://img.shields.io/npm/v/@vibefoundry/vibe-shield.svg)](https://www.npmjs.com/package/@vibefoundry/vibe-shield)
 [![npm downloads](https://img.shields.io/npm/dm/@vibefoundry/vibe-shield.svg)](https://www.npmjs.com/package/@vibefoundry/vibe-shield)
 [![CI](https://img.shields.io/github/actions/workflow/status/avivgerz-hue/vibe-shield/ci.yml?branch=main&style=flat-square&logo=githubactions&label=CI)](https://github.com/avivgerz-hue/vibe-shield/actions/workflows/ci.yml)
-[![node](https://img.shields.io/badge/node-%E2%89%A518.17.0-5fa04e?style=flat-square&logo=nodedotjs)](#-requirements)
-[![license](https://img.shields.io/github/license/avivgerz-hue/vibe-shield?style=flat-square&color=blue)](./LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A518.17.0-5fa04e?style=flat-square)](#-requirements)
+[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 [![zero dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen?style=flat-square)](./package.json)
 [![rules](https://img.shields.io/badge/detection%20signatures-92-8b5cf6?style=flat-square)](./src/scanner/rules)
 [![self-scan](https://img.shields.io/badge/self--scan-100%2F100%20A%2B-16a34a?style=flat-square)](#-it-scans-itself)
 
+![Live Terminal Demo](assets/demo.svg)
+
 ```bash
-npx -y @vibefoundry/vibe-shield scan
+npx -y @vibefoundry/vibe-shield@latest scan .
 ```
 
-![vibe-shield terminal preview](./assets/hero-terminal.svg)
+<sub>Illustrative two-file scan; fixes are applied manually. Results vary by project. A clean score is not a security guarantee.</sub>
 
-</div>
+### VibeFoundry Agent Suite
+
+- 🎨 **[unslop](https://github.com/avivgerz-hue/unslop)** — UI Design DNA &amp; Anti-Slop Engine · `npx -y unslop-mcp@latest init`
+- 🛡️ **[vibe-shield](https://github.com/avivgerz-hue/vibe-shield)** — Security Scanner for AI Code · `npx -y @vibefoundry/vibe-shield@latest scan .`
+- 👻 **[ghost-qa](https://github.com/avivgerz-hue/ghost-qa)** — Autonomous Headless Browser QA · `npx -y ghost-qa@latest test http://localhost:3000`
+
+vibe-shield is a **static security scanner** plus an **Agent Skill** that helps Claude Code, Codex, Cursor and Windsurf audit before they say *“done”*.
 
 ---
 

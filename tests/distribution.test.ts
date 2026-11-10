@@ -233,23 +233,41 @@ describe('README badges', () => {
   });
 });
 
-describe('hero terminal preview', () => {
-  it('embeds the hero image near the top of the README', () => {
+describe('README first impression', () => {
+  it('shows the star CTA, animated demo and immediately following quickstart near the top', () => {
     const readme = read('README.md');
-    expect(readme).toContain('![vibe-shield terminal preview](./assets/hero-terminal.svg)');
-    // Above the fold: within the first 40 lines, under the badges.
-    const line = readme.split('\n').findIndex((l) => l.includes('hero-terminal.svg'));
+    expect(readme).toContain('⭐ **If this tool helps your AI coding workflow, please give this repository a Star!**');
+    const marker = '![Live Terminal Demo](assets/demo.svg)';
+    const line = readme.split('\n').findIndex((l) => l.includes(marker));
     expect(line).toBeGreaterThan(0);
-    expect(line).toBeLessThan(40);
+    expect(line).toBeLessThan(25);
+    expect(readme).toContain(`${marker}\n\n\`\`\`bash\nnpx -y @vibefoundry/vibe-shield@latest scan .\n\`\`\``);
+    expect(readme).toContain('fixes are applied manually');
   });
 
-  it('ships the SVG the README points at', () => {
-    const svgPath = path.join(ROOT, 'assets', 'hero-terminal.svg');
-    expect(existsSync(svgPath), 'assets/hero-terminal.svg').toBe(true);
+  it('links all three suite repositories and their requested commands', () => {
+    const readme = read('README.md');
+    for (const repo of ['unslop', 'vibe-shield', 'ghost-qa']) expect(readme).toContain(`https://github.com/avivgerz-hue/${repo}`);
+    for (const command of ['npx -y unslop-mcp@latest init', 'npx -y @vibefoundry/vibe-shield@latest scan .', 'npx -y ghost-qa@latest test http://localhost:3000']) expect(readme).toContain(command);
+  });
+
+  it('ships a standalone accessible looping SVG with a reduced-motion fallback', () => {
+    const svgPath = path.join(ROOT, 'assets', 'demo.svg');
+    expect(existsSync(svgPath), 'assets/demo.svg').toBe(true);
     const svg = readFileSync(svgPath, 'utf8');
-    // A rasterised screenshot would not scale; this must stay a real vector.
     expect(svg.trimStart().startsWith('<svg')).toBe(true);
     expect(svg).toContain('viewBox');
+    expect(svg).toContain('@keyframes');
+    expect(svg).toContain('infinite');
+    expect(svg).toContain('prefers-reduced-motion');
+    expect(svg).toContain('<title');
+    expect(svg).toContain('<desc');
+    expect(svg).toContain('VSB-AUTH-001');
+    expect(svg).toContain('VSB-DB-001');
+    expect(svg).toContain('29/100');
+    expect(svg).toContain('100/100');
+    expect(svg).toContain('Manually add session ownership');
+    expect(svg).not.toMatch(/<script|<image|<foreignObject|(?:href|src)\s*=/i);
     expect(svg.length).toBeLessThan(200 * 1024);
   });
 });
