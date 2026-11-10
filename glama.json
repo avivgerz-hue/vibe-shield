@@ -8,14 +8,14 @@
   "repository": "https://github.com/avivgerz-hue/vibe-shield",
   "homepage": "https://github.com/avivgerz-hue/vibe-shield#readme",
   "license": "MIT",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "runtime": "node",
   "transport": "stdio",
   "startCommand": "npx -y @vibefoundry/vibe-shield mcp",
   "tools": [
     {
       "name": "vibe_shield_scan",
-      "description": "Runs the 60-rule scanner over a project and returns the grade, score and findings with exact file, line, CWE and remediation."
+      "description": "Runs the 80-rule code scanner over a project and returns the grade, score and findings with exact file, line, CWE and remediation."
     },
     {
       "name": "vibe_shield_audit_skills",

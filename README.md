@@ -69,7 +69,7 @@ It works. It also has **three critical vulnerabilities** — no authentication, 
 `npx -y @vibefoundry/vibe-shield scan` catches all three in **17 milliseconds**:
 
 ```
-🛡️  vibe-shield · security scan (illustrative output)
+🛡️  vibe-shield · security scan (illustrative output for current source)
 target  /home/you/app
 
 💀 GRADE F — 0/100 · 3 critical
@@ -85,7 +85,7 @@ app/api/users/route.ts
            await db.query(`DELETE FROM users WHERE id = ${id} AND owner = ${userId}`);
   CRITICAL 4:22     VSB-AUTH-004  Record ownership taken from the request instead of the session (IDOR)
 
-  7 files  ·  1 KiB  ·  412 files/s  ·  17 ms  ·  79 rules
+  7 files  ·  1 KiB  ·  412 files/s  ·  17 ms  ·  80 rules
 
   ⚠  3 critical findings — rotate any exposed credential before anything else.
   Fix it      npx -y @vibefoundry/vibe-shield scan --fix-prompt    # writes SECURITY_PATCH_PROMPT.md for your agent
@@ -166,7 +166,7 @@ vibe-shield encodes those specific shapes: 92 signatures across eight defensive 
 
 **Client-boundary limitation:** Client reachability is a best-effort static graph of literal imports, re-exports and `require` calls using relative paths and root `tsconfig.json`/`jsconfig.json` aliases. Dynamic paths, inherited or nested configurations, excluded or oversized files and other bundler resolution may be missed. A server-side service-role helper still bypasses RLS: use `import 'server-only'`, authorize every privileged request, and verify the production bundle. Auth-helper names and `with*` wrappers are signals, not proof that authorization is enforced.
 
-**80 code signatures + 12 agent-integrity signatures = 92.** Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and an OWASP association — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
+**80 code signatures + 12 agent-integrity signatures = 92.** The `scan` command runs the 80 code rules; `audit-skills` runs the 12 agent rules. Every rule has an id, a CWE, an illustrative vulnerable shape, remediation guidance, and an OWASP association — run `npx -y @vibefoundry/vibe-shield rules` or `npx -y @vibefoundry/vibe-shield explain <ID>`.
 
 ### Client-side secret & data exposure — `VSB-CLIENT-*`
 
@@ -427,12 +427,12 @@ This repository runs its own gate on every commit and in CI:
 
 ```console
 $ npx -y @vibefoundry/vibe-shield scan
-🛡️  vibe-shield · security scan (illustrative output)
+🛡️  vibe-shield · security scan (illustrative output for current source)
 target  /you/vibe-shield
 
 🏆 GRADE A+ — 100/100
 
-  21 files  ·  172 KiB  ·  236 files/s  ·  89 ms  ·  79 rules
+  21 files  ·  172 KiB  ·  236 files/s  ·  89 ms  ·  80 rules
 
   Nothing to fix. Keep the shield up. 🛡️
 
@@ -476,7 +476,7 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 ```
  discover ──▶ project context ──▶ rule gate ──▶ detect ──▶ suppress ──▶ score ──▶ report
    │              │                  │           │
-   │              │                  │           └─ 92 rules, each a pure (FileContext) => RuleHit[]
+   │              │                  │           └─ 80 code rules; 12 agent-integrity rules run in audit-skills
    │              │                  └─ cheap content hints: most rules skip most files
    │              └─ manifests, framework flags, cross-file RLS index, git index, middleware matchers
    └─ one tree walk, gitignore/.vibe-shieldignore layering, binary + size + test/doc pruning
