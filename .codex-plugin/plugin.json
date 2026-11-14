@@ -1,0 +1,34 @@
+{
+  "name": "vibe-shield",
+  "version": "2.1.2",
+  "description": "Static security scanner and MCP server with 92 rules for AI-generated Next.js, Supabase and TypeScript apps, including MCP and Skill file poisoning checks.",
+  "author": {
+    "name": "VibeFoundry",
+    "url": "https://github.com/avivgerz-hue"
+  },
+  "homepage": "https://github.com/avivgerz-hue/vibe-shield#readme",
+  "repository": "https://github.com/avivgerz-hue/vibe-shield",
+  "license": "MIT",
+  "keywords": [
+    "security",
+    "mcp",
+    "static-analysis",
+    "owasp",
+    "supabase",
+    "nextjs",
+    "agent-skills"
+  ],
+  "interface": {
+    "displayName": "vibe-shield",
+    "shortDescription": "92-rule security scanner for AI-generated code",
+    "developerName": "VibeFoundry",
+    "category": "Coding",
+    "websiteURL": "https://github.com/avivgerz-hue/vibe-shield",
+    "longDescription": "Static security scanner and MCP server with 92 rules for AI-generated Next.js, Supabase and TypeScript apps. It checks API routes, auth and webhook verification, database access and MCP and Skill files such as SKILL.md, .cursorrules and mcp.json.",
+    "capabilities": [
+      "Interactive",
+      "Read"
+    ]
+  },
+  "skills": "./.claude/skills/"
+}
