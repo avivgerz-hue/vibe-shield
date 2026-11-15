@@ -1,0 +1,7 @@
+tests/
+test/
+**/__tests__/
+**/*.test.ts
+dist/
+node_modules/
+coverage/
