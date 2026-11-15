@@ -28,7 +28,9 @@
     "capabilities": [
       "Interactive",
       "Read"
-    ]
+    ],
+    "composerIcon": "./assets/hero-terminal.svg",
+    "termsOfServiceURL": "https://github.com/avivgerz-hue/vibe-shield/blob/main/LICENSE"
   },
   "skills": "./.claude/skills/"
 }
