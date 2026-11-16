@@ -228,7 +228,7 @@ export function maskCStyleComments(source: string): string {
         if (c === char || c === '\n') break;
         j += 1;
       }
-      state.out.push(...source.slice(i, Math.min(j + 1, n)).split(''));
+      state.out.push(source.slice(i, Math.min(j + 1, n)));
       state.i = Math.min(j + 1, n);
       lastSignificant = char;
       continue;
@@ -255,7 +255,7 @@ export function maskCStyleComments(source: string): string {
         if (c === '`' && depth === 0) break;
         j += 1;
       }
-      state.out.push(...source.slice(i, Math.min(j + 1, n)).split(''));
+      state.out.push(source.slice(i, Math.min(j + 1, n)));
       state.i = Math.min(j + 1, n);
       lastSignificant = '`';
       continue;
@@ -283,7 +283,7 @@ export function maskCStyleComments(source: string): string {
       }
       if (closed) {
         while (j < n && /[a-z]/.test(source[j] ?? '')) j += 1;
-        state.out.push(...source.slice(i, j).split(''));
+        state.out.push(source.slice(i, j));
         state.i = j;
         lastSignificant = '/';
         continue;
@@ -332,7 +332,7 @@ export function maskSqlComments(source: string): string {
         }
         j += 1;
       }
-      state.out.push(...source.slice(i, Math.min(j + 1, n)).split(''));
+      state.out.push(source.slice(i, Math.min(j + 1, n)));
       state.i = Math.min(j + 1, n);
       continue;
     }
@@ -366,7 +366,7 @@ export function maskHashComments(source: string): string {
         if (c === char || c === '\n') break;
         j += 1;
       }
-      state.out.push(...source.slice(i, Math.min(j + 1, n)).split(''));
+      state.out.push(source.slice(i, Math.min(j + 1, n)));
       state.i = Math.min(j + 1, n);
       continue;
     }
