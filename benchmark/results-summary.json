@@ -1,0 +1,157 @@
+{
+  "benchmarkVersion": "2026.03",
+  "scanner": "@vibefoundry/vibe-shield@2.1.2",
+  "ruleCount": 92,
+  "packagesAnalyzed": 160,
+  "filesAnalyzed": 7062,
+  "totalFindings": 597,
+  "anyFindingCount": 33,
+  "anyFindingPct": 20.6,
+  "critHighCount": 16,
+  "critHighPct": 10,
+  "sev": {
+    "critical": 167,
+    "high": 82,
+    "medium": 321,
+    "low": 27
+  },
+  "cat": {
+    "infrastructure": 39,
+    "unguarded-routes": 33,
+    "ai-vulnerabilities": 29,
+    "secret-entropy": 310,
+    "dependencies": 17,
+    "client-exposure": 7,
+    "database-exposure": 162
+  },
+  "cohorts": [
+    {
+      "id": "mcp-servers",
+      "title": "MCP Servers & Tool Providers",
+      "packages": 40,
+      "avgScore": 90.7,
+      "anyRate": "17.5%",
+      "critHighRate": "10.0%",
+      "findings": 49
+    },
+    {
+      "id": "agent-skills",
+      "title": "Agent Skills, Cursor Rules & Coding Plugins",
+      "packages": 40,
+      "avgScore": 94.3,
+      "anyRate": "15.0%",
+      "critHighRate": "7.5%",
+      "findings": 16
+    },
+    {
+      "id": "fullstack-ai",
+      "title": "Next.js / Supabase / Stripe AI Web Packages",
+      "packages": 40,
+      "avgScore": 87.8,
+      "anyRate": "25.0%",
+      "critHighRate": "5.0%",
+      "findings": 244
+    },
+    {
+      "id": "llm-agents",
+      "title": "LLM Agent & Prompt Execution Tooling",
+      "packages": 40,
+      "avgScore": 85.8,
+      "anyRate": "25.0%",
+      "critHighRate": "17.5%",
+      "findings": 288
+    }
+  ],
+  "topRules": [
+    [
+      "VSB-SECRET-002: High-entropy value assigned to a credential-shaped name",
+      306
+    ],
+    [
+      "VSB-DB-006: ORM raw-SQL API called with a dynamic string",
+      130
+    ],
+    [
+      "VSB-DB-010: Request data used as a table, column or ORDER BY identifier",
+      30
+    ],
+    [
+      "VSB-AUTH-004: Record ownership taken from the request instead of the session (IDOR)",
+      26
+    ],
+    [
+      "VSB-AI-012: Filesystem path built from request data",
+      17
+    ],
+    [
+      "VSB-DEPS-001: Wildcard package dependency",
+      12
+    ],
+    [
+      "VSB-INFRA-001: Wildcard cross-origin response",
+      11
+    ],
+    [
+      "VSB-INFRA-010: Content-Security-Policy not observed in server configuration",
+      9
+    ],
+    [
+      "VSB-INFRA-011: X-Frame-Options not observed in server configuration",
+      9
+    ],
+    [
+      "VSB-INFRA-012: Strict-Transport-Security not observed in server configuration",
+      9
+    ],
+    [
+      "VSB-AI-011: Outbound request to a caller-supplied URL (SSRF)",
+      6
+    ],
+    [
+      "VSB-DEPS-002: Latest tag used for package dependency",
+      5
+    ]
+  ],
+  "topCwes": [
+    [
+      "CWE-798: Use of Hard-coded Credentials",
+      310
+    ],
+    [
+      "CWE-89: Improper Neutralization of Special Elements used in an SQL Command",
+      162
+    ],
+    [
+      "CWE-693: Protection Mechanism Failure",
+      27
+    ],
+    [
+      "CWE-639: Authorization Bypass Through User-Controlled Key",
+      26
+    ],
+    [
+      "CWE-1104: Use of Unmaintained Third Party Components",
+      17
+    ],
+    [
+      "CWE-22: Improper Limitation of a Pathname to a Restricted Directory",
+      17
+    ],
+    [
+      "CWE-942: Permissive Cross-domain Policy with Untrusted Domains",
+      11
+    ],
+    [
+      "CWE-918: Server-Side Request Forgery",
+      6
+    ],
+    [
+      "CWE-863: Incorrect Authorization",
+      4
+    ],
+    [
+      "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
+      4
+    ]
+  ]
+}

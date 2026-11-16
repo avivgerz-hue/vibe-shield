@@ -1,5 +1,7 @@
 # 🛡️ vibe-shield
 
+> 📊 **[2026 Empirical Security Benchmark](./BENCHMARK-2026.md):** We audited **160 published AI, MCP & Agent Skill packages (7,062 files)** with ibe-shield — uncovering **597 security findings (167 Critical, 82 High)** across CWE-798, CWE-89, CWE-639, and SKILL.md surfaces. **[Read the full benchmark & dataset →](./BENCHMARK-2026.md)**
+
 **The security gate for AI-written code.** Find exposed secrets, unguarded routes and missing RLS before you ship.
 
 > ⭐ **If this tool helps your AI coding workflow, please give this repository a Star!** It helps more developers discover the project.
