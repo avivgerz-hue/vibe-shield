@@ -46,7 +46,17 @@
     "ci-security-gate",
     "npx",
     "typescript",
-    "zero-dependencies"
+    "zero-dependencies",
+    "vibe-coding-security",
+    "ai-code-scanner",
+    "nextjs-security-scanner",
+    "supabase-rls-scanner",
+    "stripe-webhook-security",
+    "skill-md-scanner",
+    "prompt-injection-scanner",
+    "static-analysis-cli",
+    "claude-code-security",
+    "cursor-security"
   ],
   "license": "MIT",
   "author": "VibeFoundry",
