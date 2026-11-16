@@ -699,3 +699,72 @@ describe('star CTA and badge', () => {
     finally { project.cleanup(); }
   });
 });
+
+describe('Verified README badge', () => {
+  it('prints only copyable Markdown for a clean non-empty project', async () => {
+    const project = makeProject({ 'index.ts': 'export const answer = 42;\n' });
+    try {
+      for (const args of [['--badge'], ['scan', '--badge'], ['scan', '.', '--badge']]) {
+        const io = makeIo(project.root);
+        expect(await run(args, io)).toBe(0);
+        expect(io.out()).toMatch(/^\[!\[Vibe-Shield Verified: static scan with no findings\]\(https:\/\/img\.shields\.io\/badge\/Vibe--Shield-Verified%20%28static%20scan%29-10b981\)\]\(https:\/\/github\.com\/avivgerz-hue\/vibe-shield\)\n$/);
+        expect(io.err()).toBe('');
+      }
+    } finally { project.cleanup(); }
+  });
+
+  it('does not award a badge for findings, including low-severity findings', async () => {
+    const project = makeProject(vulnerableApp());
+    try {
+      const io = makeIo(project.root);
+      expect(await run(['--badge'], io)).toBe(1);
+      expect(io.out()).toBe('');
+      expect(io.err()).toContain('findings');
+    } finally { project.cleanup(); }
+    const low = makeProject({ 'Dockerfile': 'FROM node:20-alpine\nCMD ["node"]\n' });
+    try {
+      const io = makeIo(low.root);
+      expect(await run(['scan', '--badge'], io)).toBe(1);
+      expect(io.out()).toBe('');
+    } finally { low.cleanup(); }
+  });
+
+  it('does not award a badge for an empty scan or suppressed findings', async () => {
+    const empty = makeProject({});
+    try {
+      const io = makeIo(empty.root);
+      expect(await run(['--badge'], io)).toBe(2);
+      expect(io.out()).toBe('');
+      expect(io.err()).toContain('no files scanned');
+    } finally { empty.cleanup(); }
+    const suppressed = makeProject({
+      'package.json': JSON.stringify({ name: 'x', dependencies: { next: '14.0.0' } }),
+      'app/api/users/route.ts': '// vibe-shield-disable-file VSB-AUTH-001\nexport async function DELETE(req: Request) { await db.delete(id); }\n',
+    });
+    try {
+      const io = makeIo(suppressed.root);
+      expect(await run(['--badge'], io)).toBe(1);
+      expect(io.out()).toBe('');
+      expect(io.err()).toContain('suppressions');
+    } finally { suppressed.cleanup(); }
+  });
+
+  it('rejects filtered, partial or incompatible scans and other commands', async () => {
+    const project = makeProject({ 'src/index.ts': 'export const ok = true;\n' });
+    try {
+      for (const args of [
+        ['scan', '--badge', '--rules', 'VSB-AUTH-001'],
+        ['scan', '--badge', '--severity', 'high'],
+        ['scan', '--badge', '--ignore', 'src'],
+        ['scan', '--badge', '--format', 'json'],
+        ['scan', '--badge', '--fail-on', 'critical'],
+        ['scan', 'src', '--badge'],
+        ['audit-skills', '--badge'],
+      ]) {
+        const io = makeIo(project.root);
+        expect(await run(args, io), args.join(' ')).toBe(2);
+        expect(io.out()).toBe('');
+      }
+    } finally { project.cleanup(); }
+  });
+});

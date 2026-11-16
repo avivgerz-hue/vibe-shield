@@ -1,12 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.gradeBadge = gradeBadge;
+exports.verifiedBadge = verifiedBadge;
 exports.starFooter = starFooter;
 const REPO = 'https://github.com/avivgerz-hue/vibe-shield';
 /** A badge represents the reported scan, never an unscanned project. */
 function gradeBadge(grade) {
     const color = grade.startsWith('A') ? '10b981' : grade.startsWith('B') ? '84cc16' : grade.startsWith('C') ? 'f59e0b' : 'ef4444';
     return `[![Vibe-Shield Security](https://img.shields.io/badge/Vibe--Shield-Grade_${encodeURIComponent(grade)}-${color})](${REPO})`;
+}
+/** Static, self-reported snapshot; not a certification or a live security check. */
+function verifiedBadge() {
+    return `[![Vibe-Shield Verified: static scan with no findings](https://img.shields.io/badge/Vibe--Shield-Verified%20%28static%20scan%29-10b981)](${REPO})`;
 }
 /** No terminal control sequences: the badge remains easy to copy and paste. */
 function starFooter(grade, scope) {
