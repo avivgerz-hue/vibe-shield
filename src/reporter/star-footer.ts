@@ -8,11 +8,6 @@ export function gradeBadge(grade: Grade): string {
   return `[![Vibe-Shield Security](https://img.shields.io/badge/Vibe--Shield-Grade_${encodeURIComponent(grade)}-${color})](${REPO})`;
 }
 
-/** Static, self-reported snapshot; not a certification or a live security check. */
-export function verifiedBadge(): string {
-  return `[![Vibe-Shield Verified: static scan with no findings](https://img.shields.io/badge/Vibe--Shield-Verified%20%28static%20scan%29-10b981)](${REPO})`;
-}
-
 /** No terminal control sequences: the badge remains easy to copy and paste. */
 export function starFooter(grade?: Grade, scope?: string): string {
   const badge = grade ? `  README badge${scope ? ` (${scope})` : ''}:\n  ${gradeBadge(grade)}` : '  Run a scan to get a grade and README badge.';

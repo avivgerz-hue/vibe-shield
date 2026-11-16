@@ -25,12 +25,9 @@ npx -y @vibefoundry/vibe-shield@latest scan .
 
 ### VibeFoundry Agent Suite
 
-| Project | What it does | Quick start |
-| --- | --- | --- |
-| 🎨 **[unslop](https://github.com/avivgerz-hue/unslop)** | UI Design DNA &amp; Anti-Slop Engine | `npx -y unslop-mcp@latest init` |
-| 🛡️ **[vibe-shield](https://github.com/avivgerz-hue/vibe-shield)** | Security Scanner for AI Code | `npx -y @vibefoundry/vibe-shield@latest scan .` |
-| 👻 **[ghost-qa](https://github.com/avivgerz-hue/ghost-qa)** | Autonomous Headless Browser QA | `npx -y ghost-qa@latest test http://localhost:3000` |
-| ✨ **[glowup-ui](https://github.com/avivgerz-hue/glowup-ui)** | Open-source design skill for AI coding agents | [View repository](https://github.com/avivgerz-hue/glowup-ui) |
+- 🎨 **[unslop](https://github.com/avivgerz-hue/unslop)** — UI Design DNA &amp; Anti-Slop Engine · `npx -y unslop-mcp@latest init`
+- 🛡️ **[vibe-shield](https://github.com/avivgerz-hue/vibe-shield)** — Security Scanner for AI Code · `npx -y @vibefoundry/vibe-shield@latest scan .`
+- 👻 **[ghost-qa](https://github.com/avivgerz-hue/ghost-qa)** — Autonomous Headless Browser QA · `npx -y ghost-qa@latest test http://localhost:3000`
 
 vibe-shield is a **static security scanner** plus an **Agent Skill** that helps Claude Code, Codex, Cursor and Windsurf audit before they say *“done”*.
 
@@ -52,7 +49,7 @@ npx -y @vibefoundry/vibe-shield audit-skills --report agent-report.html
 
 Reports include severity, CWE, locations, snippets, OWASP 2025 web mappings for every rule and contextual LLM mappings when applicable, and illustrative remediation. Examples are **not** automatic project-specific patches; validate them against the application. The scanner itself is offline and read-only by default; `--cache`, `--out`, `--report`, `--patch-prompt` and `init` explicitly write files. Installing with `npx` can require network access. An A+ score applies only to the rules and files examined and is not a security certification.
 
-> The npm `2.0.0` artifact predates the universal `--agents` initializer. Use npm `2.1.1` or later, or build from the current GitHub source. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
+> The npm `2.0.0` artifact predates the universal `--agents` initializer. Use npm `2.1.0` or later (once published), or the GitHub `v2` ref. To exercise this checkout locally, run `npm ci && npm run build`, then `node dist/bin/vibe-shield.js` with the same arguments.
 
 ---
 
@@ -497,20 +494,6 @@ Suppressed findings are **counted and reported** in the scorecard, never silentl
 
 ---
 
-## 🏷️ README badge
-
-From your project root, run:
-
-```bash
-npx -y @vibefoundry/vibe-shield --badge
-```
-
-Copy the printed Markdown into your README. The command emits a **Vibe-Shield Verified** badge only after a non-empty code scan with no findings, suppressed findings, or detected incomplete project analysis. It rejects rule and severity filters; run `scan` for details if it cannot issue a badge. You can also run `scan --badge`.
-
-This is a **self-reported, static snapshot**, not a live status, security certification, or proof that your project is secure. It covers only the scanner's supported files and rules and respects ignore files; tests and docs are excluded by default. It does not audit agent skills or MCP configurations: run `audit-skills` separately. Re-run the scan and update the badge after changes.
-
----
-
 ## 📖 CLI reference
 
 ```
@@ -525,7 +508,6 @@ vibe-shield version | help
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `--badge` | off | Print Markdown for a clean, non-empty code scan |
 | `--format <fmt>` | `console` | `console` `compact` `summary` `json` `sarif` `github` `markdown` `html` |
 | `--fail-on <sev>` | `critical` | Exit 1 at/above this severity |
 | `--severity <sev>` | — | Only report at/above this severity |

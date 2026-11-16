@@ -20,7 +20,7 @@ import { auditSkills } from '../src/mcp-guard/skill-auditor';
 import { serveMcp } from '../src/mcp/server';
 import { AGENT_NAMES, installScaffold, type AgentName } from '../src/init/scaffold';
 import { reportConsole, createColorizer } from '../src/reporter/console-reporter';
-import { starFooter, verifiedBadge } from '../src/reporter/star-footer';
+import { starFooter } from '../src/reporter/star-footer';
 import { formatResult, isOutputFormat, OUTPUT_FORMATS, type OutputFormat } from '../src/reporter/formatters';
 import { writePatchPrompt, PATCH_PROMPT_FILENAME } from '../src/reporter/patch-prompt-writer';
 import { hasFindingsAtOrAbove, packageVersion, scanProject } from '../src/scanner/engine';
@@ -80,7 +80,6 @@ SCAN OPTIONS
   --no-color             Disable ANSI colour.
   --no-shield-ignore     Ignore .vibe-shieldignore (e.g. to scan excluded fixtures).
   --json                 Shorthand for --format json.
-  --badge                Print a README badge after a clean, non-empty code scan.
 
 INIT OPTIONS
   --target <dir>         Repository to install into.          (cwd)
@@ -94,7 +93,6 @@ EXAMPLES
   npx -y @vibefoundry/vibe-shield scan
   npx -y @vibefoundry/vibe-shield scan --fail-on high --format github
   npx -y @vibefoundry/vibe-shield scan --fix-prompt
-  npx -y @vibefoundry/vibe-shield --badge
   npx -y @vibefoundry/vibe-shield init
   npx -y @vibefoundry/vibe-shield explain VSB-DB-001
   npx -y @vibefoundry/vibe-shield audit-skills .claude
@@ -117,7 +115,6 @@ const BOOLEAN_FLAGS = new Set([
   'mcp',
   'version',
   'fix-prompt',
-  'badge',
   'include-tests',
   'include-docs',
   'cache',
@@ -304,18 +301,6 @@ async function emitReport(
 /* -------------------------------------------------------------------------- */
 
 async function commandScan(parsed: ParsedArgs, io: CliIo): Promise<number> {
-  const badge = flagBool(parsed, 'badge');
-  if (badge) {
-    // A static badge must never be awarded from a partial rule set, filtered
-    // findings, a subset of the project, or an incompatible output mode.
-    const allowed = new Set(['badge', 'no-color', 'include-tests', 'include-docs', 'no-gitignore', 'no-shield-ignore']);
-    const incompatible = [...parsed.flags.keys()].filter((flag) => !allowed.has(flag));
-    if (incompatible.length || parsed.positionals.length > 1 ||
-        (parsed.positionals.length === 1 && path.resolve(io.cwd, parsed.positionals[0]!) !== path.resolve(io.cwd))) {
-      write(io, 'stderr', 'vibe-shield: --badge scans the current project only and cannot be combined with filters or output flags; cd to the project first.\n');
-      return EXIT_USAGE;
-    }
-  }
   const format = (flagString(parsed, 'format') ?? (flagBool(parsed, 'json') ? 'json' : 'console')).toLowerCase();
   if (!isOutputFormat(format)) {
     write(io, 'stderr', `vibe-shield: unknown --format "${format}". Choose one of: ${OUTPUT_FORMATS.join(', ')}\n`);
@@ -365,19 +350,6 @@ async function commandScan(parsed: ParsedArgs, io: CliIo): Promise<number> {
     useGitignore: !flagBool(parsed, 'no-gitignore'),
     useShieldIgnore: flagBool(parsed, 'no-shield-ignore') ? false : undefined,
   });
-
-  if (badge) {
-    if (result.stats.filesScanned === 0) {
-      write(io, 'stderr', 'vibe-shield: no files scanned; no badge generated.\n');
-      return EXIT_USAGE;
-    }
-    if (result.findings.length || result.suppressedCount || result.notices.some((notice) => /project detection failed|client import graph is incomplete/i.test(notice))) {
-      write(io, 'stderr', 'vibe-shield: findings, suppressions or an incomplete scan prevent a Verified badge. Run scan for details.\n');
-      return EXIT_FINDINGS;
-    }
-    write(io, 'stdout', `${verifiedBadge()}\n`);
-    return EXIT_OK;
-  }
 
   const filtered: typeof result =
     severity && isSeverity(severity)
@@ -620,16 +592,11 @@ export async function run(argv: readonly string[], io: CliIo = defaultIo()): Pro
   const parsed = parseArgs(argv);
   const command =
     parsed.command ||
-    (flagBool(parsed, 'mcp') ? 'mcp' : flagBool(parsed, 'version') ? 'version' : flagBool(parsed, 'help') ? 'help' : flagBool(parsed, 'badge') ? 'scan' : '');
+    (flagBool(parsed, 'mcp') ? 'mcp' : flagBool(parsed, 'version') ? 'version' : flagBool(parsed, 'help') ? 'help' : '');
 
   if (parsed.unknown.length) {
     write(io, 'stderr', `vibe-shield: unknown option${parsed.unknown.length === 1 ? '' : 's'} ${parsed.unknown.join(', ')}\n`);
     write(io, 'stderr', 'Run `vibe-shield help` for usage.\n');
-    return EXIT_USAGE;
-  }
-
-  if (flagBool(parsed, 'badge') && command !== 'scan') {
-    write(io, 'stderr', 'vibe-shield: --badge is only supported for code scans.\n');
     return EXIT_USAGE;
   }
 
