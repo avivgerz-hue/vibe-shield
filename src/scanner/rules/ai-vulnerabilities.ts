@@ -615,7 +615,7 @@ const ssrf: Rule = defineRule({
   detect(ctx) {
     const hits: RuleHit[] = [];
     const sinks: RegExp[] = [
-      /\bfetch\s*\(\s*(?:req|request|ctx|c|event|searchParams|params|query|body)[\w.\[\]'"]*/g,
+      /(?<![.\w])\bfetch\s*\(\s*(?:req|request|ctx|c|event|searchParams|params|query|body)\s*(?:\.|\[)[\w.\[\]'"]*/g,
       /\baxios\s*(?:\.\s*(?:get|post|put|delete|request))?\s*\(\s*(?:req|request|ctx|params|query|body)/g,
       /\b(?:got|superagent|needle|nodeFetch)\s*\(\s*(?:req|request|params|query|body)/g,
       /\brequests\s*\.\s*(?:get|post|put|delete|request)\s*\(\s*(?:request|self\.request|data\[|params\[|body)/g,
@@ -671,7 +671,7 @@ const pathTraversal: Rule = defineRule({
     const hits: RuleHit[] = [];
     const sinks: RegExp[] = [
       /\b(?:readFile|readFileSync|writeFile|writeFileSync|createReadStream|createWriteStream|unlink|unlinkSync|sendFile|download)\s*\(\s*(?:path\s*\.\s*(?:join|resolve)\s*\(|`|\+\s*)?[^)]{0,160}(?:req|request|ctx|params|query|searchParams|body)[\w.\[\]'"]{0,40}/g,
-      /\b(?:open|Path)\s*\(\s*(?:request|params|query|body|filename|file_path)[^)]{0,80}/g,
+      /(?<!window\s*\.\s*)\b(?:open|Path)\s*\(\s*(?:request|params|query|body|filename|file_path)[^)]{0,80}/g,
     ];
     for (const regex of sinks) {
       for (const match of ctx.code.matchAll(regex)) {

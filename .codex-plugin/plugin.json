@@ -1,6 +1,6 @@
 {
   "name": "vibe-shield",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "Static security scanner and MCP server with 92 rules for AI-generated Next.js, Supabase and TypeScript apps, including MCP and Skill file poisoning checks.",
   "author": {
     "name": "VibeFoundry",
